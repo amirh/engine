@@ -9,6 +9,8 @@ import android.os.Build;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.StandardMethodCodec;
@@ -196,6 +198,13 @@ public class PlatformViewsController implements MethodChannel.MethodCallHandler 
                     }
                 }
         );
+    }
+
+    public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+        if(vdControllers.values().isEmpty())
+            return null;
+        VirtualDisplayController vdController = vdControllers.values().iterator().next();
+        return vdController.getView().onCreateInputConnection(outAttrs);
     }
 
     private void onTouch(MethodCall call, MethodChannel.Result result) {

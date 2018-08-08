@@ -7,6 +7,8 @@ package io.flutter.app;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.platform.PlatformViewRegistry;
@@ -245,4 +247,9 @@ public class FlutterPluginRegistry
     public void destroy() {
         mPlatformViewsController.onFlutterViewDestroyed();
     }
+
+    public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+        return mPlatformViewsController.onCreateInputConnection(outAttrs);
+    }
+
 }

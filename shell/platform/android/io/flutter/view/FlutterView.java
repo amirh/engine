@@ -359,13 +359,15 @@ public class FlutterView extends SurfaceView
 
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-        try {
-            mLastInputConnection = mTextInputPlugin.createInputConnection(this, outAttrs);
-            return mLastInputConnection;
-        } catch (JSONException e) {
-            Log.e(TAG, "Failed to create input connection", e);
-            return null;
-        }
+        Log.d("AMIR", "onCreateInputConnection");
+        return mNativeView.getPluginRegistry().onCreateInputConnection(outAttrs);
+//        try {
+//            mLastInputConnection = mTextInputPlugin.createInputConnection(this, outAttrs);
+//            return mLastInputConnection;
+//        } catch (JSONException e) {
+//            Log.e(TAG, "Failed to create input connection", e);
+//            return null;
+//        }
     }
 
     // Must match the PointerChange enum in pointer.dart.
