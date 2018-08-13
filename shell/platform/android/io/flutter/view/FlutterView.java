@@ -31,8 +31,10 @@ import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
 import io.flutter.app.FlutterPluginRegistry;
 import io.flutter.plugin.common.*;
+import io.flutter.plugin.editing.InputConnectionDemuxer;
 import io.flutter.plugin.editing.TextInputPlugin;
 import io.flutter.plugin.platform.PlatformPlugin;
+import io.flutter.plugin.platform.PlatformViewsController;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -104,6 +106,7 @@ public class FlutterView extends SurfaceView
     private final AnimationScaleObserver mAnimationScaleObserver;
     private boolean mIsSoftwareRenderingEnabled = false; // using the software renderer or not
     private InputConnection mLastInputConnection;
+    private final InputConnectionDemuxer mInputConnectionDemuxer;
 
     public FlutterView(Context context) {
         this(context, null);
@@ -122,10 +125,11 @@ public class FlutterView extends SurfaceView
         mMetrics.devicePixelRatio = context.getResources().getDisplayMetrics().density;
         setFocusable(true);
         setFocusableInTouchMode(true);
+        mInputConnectionDemuxer = new InputConnectionDemuxer(this);
 
         Activity activity = (Activity) getContext();
         if (nativeView == null) {
-            mNativeView = new FlutterNativeView(activity.getApplicationContext());
+            mNativeView = new FlutterNativeView(activity.getApplicationContext(), mInputConnectionDemuxer);
         } else {
             mNativeView = nativeView;
         }
@@ -359,13 +363,20 @@ public class FlutterView extends SurfaceView
 
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-        try {
-            mLastInputConnection = mTextInputPlugin.createInputConnection(this, outAttrs);
-            return mLastInputConnection;
-        } catch (JSONException e) {
-            Log.e(TAG, "Failed to create input connection", e);
-            return null;
+        View v = getPluginRegistry().getPlatformViewsController().getView();
+        if (v != null) {
+            return v.onCreateInputConnection(outAttrs);
         }
+        return null;
+        // try {
+        //     mLastInputConnection = mTextInputPlugin.createInputConnection(this, outAttrs);
+        //     mInputConnectionDemuxer.setDefaultInputConnection(mLastInputConnection);
+        //     mInputConnectionDemuxer.onCreateInputConnection(outAttrs);
+        //     return mInputConnectionDemuxer;
+        // } catch (JSONException e) {
+        //     Log.e(TAG, "Failed to create input connection", e);
+        //     return null;
+        // }
     }
 
     // Must match the PointerChange enum in pointer.dart.
@@ -1022,4 +1033,9 @@ public class FlutterView extends SurfaceView
             surfaceTexture.release();
         }
     }
+
+    // @Override
+    // public boolean checkInputConnectionProxy(View view) {
+    //     return mInputConnectionDemuxer.checkInputConnectionProxy(view);
+    // }
 }

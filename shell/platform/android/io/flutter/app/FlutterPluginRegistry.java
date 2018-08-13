@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.PluginRegistry;
+import io.flutter.plugin.editing.InputConnectionDemuxer;
 import io.flutter.plugin.platform.PlatformViewRegistry;
 import io.flutter.plugin.platform.PlatformViewsController;
 import io.flutter.view.FlutterMain;
@@ -43,10 +44,10 @@ public class FlutterPluginRegistry
     private final List<UserLeaveHintListener> mUserLeaveHintListeners = new ArrayList<>(0);
     private final List<ViewDestroyListener> mViewDestroyListeners = new ArrayList<>(0);
 
-    public FlutterPluginRegistry(FlutterNativeView nativeView, Context context) {
+    public FlutterPluginRegistry(FlutterNativeView nativeView, Context context, InputConnectionDemuxer inputConnectionDemuxer) {
         mNativeView = nativeView;
         mAppContext = context;
-        mPlatformViewsController = new PlatformViewsController();
+        mPlatformViewsController = new PlatformViewsController(inputConnectionDemuxer);
     }
 
     @Override
@@ -244,5 +245,9 @@ public class FlutterPluginRegistry
 
     public void destroy() {
         mPlatformViewsController.onFlutterViewDestroyed();
+    }
+
+    public PlatformViewsController getPlatformViewsController() {
+        return mPlatformViewsController;
     }
 }

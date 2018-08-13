@@ -9,9 +9,13 @@ import android.os.Build;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.StandardMethodCodec;
+import io.flutter.plugin.editing.InputConnectionDemuxer;
+import io.flutter.plugin.editing.TextInputPlugin;
 import io.flutter.view.FlutterView;
 import io.flutter.view.TextureRegistry;
 
@@ -38,14 +42,16 @@ public class PlatformViewsController implements MethodChannel.MethodCallHandler 
     private static final int MINIMAL_SDK = Build.VERSION_CODES.KITKAT_WATCH;
 
     private final PlatformViewRegistryImpl mRegistry;
+    private final InputConnectionDemuxer mInputConnectionDemuxer;
 
     private FlutterView mFlutterView;
 
     private final HashMap<Integer, VirtualDisplayController> vdControllers;
 
-    public PlatformViewsController() {
+    public PlatformViewsController(InputConnectionDemuxer inputConnectionDemuxer) {
         mRegistry = new PlatformViewRegistryImpl();
         vdControllers = new HashMap<>();
+        mInputConnectionDemuxer = inputConnectionDemuxer;
     }
 
     public void attachFlutterView(FlutterView view) {
@@ -147,6 +153,7 @@ public class PlatformViewsController implements MethodChannel.MethodCallHandler 
         }
 
         vdControllers.put(id, vdController);
+        mInputConnectionDemuxer.addTargetView(id, vdController.getView());
 
         // TODO(amirh): copy accessibility nodes to the FlutterView's accessibility tree.
 
@@ -308,5 +315,11 @@ public class PlatformViewsController implements MethodChannel.MethodCallHandler 
             controller.dispose();
         }
         vdControllers.clear();
+    }
+
+    public View getView() {
+        if(vdControllers.values().isEmpty())
+            return null;
+        return vdControllers.values().iterator().next().getView();
     }
 }

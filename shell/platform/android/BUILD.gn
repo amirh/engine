@@ -121,6 +121,7 @@ java_library("flutter_shell_java") {
     "io/flutter/plugin/common/StandardMethodCodec.java",
     "io/flutter/plugin/common/StringCodec.java",
     "io/flutter/plugin/editing/InputConnectionAdaptor.java",
+    "io/flutter/plugin/editing/InputConnectionDemuxer.java",
     "io/flutter/plugin/editing/TextInputPlugin.java",
     "io/flutter/plugin/platform/PlatformPlugin.java",
     "io/flutter/plugin/platform/PlatformView.java",

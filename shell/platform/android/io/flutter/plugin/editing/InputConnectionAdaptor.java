@@ -8,6 +8,7 @@ import android.content.Context;
 import android.text.Editable;
 import android.text.Selection;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -24,6 +25,7 @@ class InputConnectionAdaptor extends BaseInputConnection {
     private final Editable mEditable;
     private int mBatchCount;
     private InputMethodManager mImm;
+    private View embeddedInputTarget;
 
     public InputConnectionAdaptor(FlutterView view, int client,
         MethodChannel flutterChannel, Editable editable) {
@@ -34,6 +36,10 @@ class InputConnectionAdaptor extends BaseInputConnection {
         mEditable = editable;
         mBatchCount = 0;
         mImm = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+    }
+
+    public void setEmbeddedInputTarget(View target) {
+        embeddedInputTarget = target;
     }
 
     // Send the current state of the editable to Flutter.

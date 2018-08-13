@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.HashMap;
 import java.util.Map;
 import android.content.res.AssetManager;
+import io.flutter.plugin.editing.InputConnectionDemuxer;
 
 public class FlutterNativeView implements BinaryMessenger {
     private static final String TAG = "FlutterNativeView";
@@ -27,17 +28,19 @@ public class FlutterNativeView implements BinaryMessenger {
     private FlutterView mFlutterView;
     private final Context mContext;
     private boolean applicationIsRunning;
+    private final InputConnectionDemuxer mInputConnectionDemuxer;
 
-    public FlutterNativeView(Context context) {
-        this(context, false);
+    public FlutterNativeView(Context context, InputConnectionDemuxer inputConnectionDemuxer) {
+        this(context, inputConnectionDemuxer, false);
     }
 
-    public FlutterNativeView(Context context, boolean isBackgroundView) {
+    public FlutterNativeView(Context context, InputConnectionDemuxer inputConnectionDemuxer, boolean isBackgroundView) {
         mContext = context;
-        mPluginRegistry = new FlutterPluginRegistry(this, context);
+        mPluginRegistry = new FlutterPluginRegistry(this, context, inputConnectionDemuxer);
         attach(this, isBackgroundView);
         assertAttached();
         mMessageHandlers = new HashMap<>();
+        mInputConnectionDemuxer = inputConnectionDemuxer;
     }
 
     public void detach() {
