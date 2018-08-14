@@ -1,50 +1,85 @@
 package io.flutter.plugin.editing;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.*;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-public class InputConnectionDemuxer extends BaseInputConnection {
+public class InputConnectionDemuxer {
 
     Map<Integer, View> mViewIds;
     Map<Integer, InputConnection> mTargets;
     final View mDefaultView;
     InputConnection mDefaultInputConnection;
     Integer mFocusedView;
+    final DynamicInvocationHandler mInputConnectionHandler;
+    final InputConnection mInputConnectionProxy;
 
     EditorInfo lastOutAttrs;
+    CreateInputConnection defaultCreator;
+
+    InputMethodManager mImm;
 
     public InputConnectionDemuxer(View defaultView) {
-        super(defaultView, true);
         mTargets = new HashMap<>();
         mViewIds = new HashMap<>();
         mDefaultView = defaultView;
+        mInputConnectionHandler = new DynamicInvocationHandler();
+        mInputConnectionProxy = (InputConnection) Proxy.newProxyInstance(
+                InputConnection.class.getClassLoader(),
+                new Class[] { InputConnection.class },
+                mInputConnectionHandler
+        );
+        mImm = (InputMethodManager) defaultView.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+    }
+    // TODO next:
+    // pass an input connection creator for flutter view.
+    // onCreateInputConnection for this class invoke create input connectio for the focused view or for default and return it.
+
+    public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+        if (mFocusedView == null) {
+            Log.d("AMIR", "creating default input connection");
+            return defaultCreator.create();
+        }
+        InputConnection ic =  mViewIds.get(mFocusedView).onCreateInputConnection(outAttrs);
+        Log.d("AMIR", "non default connection is: " + ic);
+        return ic;
+        // Log.d("AMIR", "onCreateInputConnection");
+        // for (int id : mViewIds.keySet()) {
+        //     View view = mViewIds.get(id);
+        //     InputConnection con = view.onCreateInputConnection(outAttrs);
+        //     if (con != null)
+        //         mTargets.put(id, con);
+        //     Log.d("AMIR", "created: " + mTargets.get(id));
+        //     Log.d("AMIR", "con: " + con);
+        // }
+        // lastOutAttrs = outAttrs;
     }
 
-    public void onCreateInputConnection(EditorInfo outAttrs) {
-        Log.d("AMIR", "onCreateInputConnection");
-        for (int id : mViewIds.keySet()) {
-            View view = mViewIds.get(id);
-            InputConnection con = view.onCreateInputConnection(outAttrs);
-            if (con != null)
-                mTargets.put(id, con);
-            Log.d("AMIR", "created: " + mTargets.get(id));
-            Log.d("AMIR", "con: " + con);
-        }
-        lastOutAttrs = outAttrs;
+    public InputConnection getInputConnection() {
+        return mInputConnectionProxy;
     }
 
     public void setDefaultInputConnection(InputConnection inputConnection) {
+        Log.d("AMIR", "setting default connection to: " + inputConnection);
         mDefaultInputConnection = inputConnection;
     }
 
-    public boolean checkInputConnectionProxy(View view) {
+    public void setDefaultInputConnectionCreator(CreateInputConnection create) {
+        defaultCreator = create;
+    }
+
+    boolean restarting = false;
+    public boolean checkInputConnectionProxy(final View view) {
         Integer id = viewIdFor(view);
         // if (id == null || !mTargets.containsKey(id)) {
         //     Log.d("AMIR", "not proxying for: " + view.getClass());
@@ -58,10 +93,21 @@ public class InputConnectionDemuxer extends BaseInputConnection {
                 break;
             }
         }
-        Log.d("AMIR", "checking proxy for: " + view.getClass());
         if (showInput) {
             Log.d("AMIR", "setting focus on: " + view.getClass());
             mFocusedView = viewIdFor(view);
+            if (!restarting) {
+                view.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.d("AMIR", "restarting imm");
+                        restarting = true;
+                        mImm.restartInput(view);
+                    }
+                });
+            } else {
+                restarting = false;
+            }
         }
         return true;
     }
@@ -83,7 +129,7 @@ public class InputConnectionDemuxer extends BaseInputConnection {
         mViewIds.put(id, view);
     }
 
-    private InputConnection getCurrentTarget() {
+    public InputConnection getCurrentTarget() {
         if (mFocusedView == null) {
             Log.d("AMIR", "default connection");
             return mDefaultInputConnection;
@@ -95,117 +141,30 @@ public class InputConnectionDemuxer extends BaseInputConnection {
             View view = mViewIds.get(mFocusedView);
             Log.d("AMIR", "trying to lazy create ic");
             InputConnection ic = view.onCreateInputConnection(lastOutAttrs);
-            if (ic == null)
+            if (ic == null) {
+                Log.d("AMIR", "couldn't create ic, routing to default target: " + mDefaultInputConnection);
                 return mDefaultInputConnection;
-            Log.d("AMIR", "lazily created ic");
+            }
             mTargets.put(mFocusedView, ic);
+            Log.d("AMIR", "lazily created ic");
             return ic;
         }
         return mTargets.get(mFocusedView);
     }
 
-    @Override
-    public CharSequence getTextBeforeCursor(int n, int flags) {
-        return getCurrentTarget().getTextBeforeCursor(n, flags);
+    class DynamicInvocationHandler implements InvocationHandler {
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if (getCurrentTarget() == null) {
+                Log.d("AMIR", "target is null!!!");
+                return null;
+            }
+            return method.invoke(getCurrentTarget(), args);
+        }
     }
 
-    @Override
-    public CharSequence getTextAfterCursor(int n, int flags) {
-        return getCurrentTarget().getTextAfterCursor(n, flags);
-    }
-
-    @Override
-    public CharSequence getSelectedText(int flags) {
-        return getCurrentTarget().getSelectedText(flags);
-    }
-
-    @Override
-    public int getCursorCapsMode(int reqModes) {
-        return getCurrentTarget().getCursorCapsMode(reqModes);
-    }
-
-    @Override
-    public ExtractedText getExtractedText(ExtractedTextRequest request, int flags) {
-        return getCurrentTarget().getExtractedText(request, flags);
-    }
-
-    @Override
-    public boolean deleteSurroundingText(int beforeLength, int afterLength) {
-        return getCurrentTarget().deleteSurroundingText(beforeLength, afterLength);
-    }
-
-    @Override
-    public boolean setComposingText(CharSequence text, int newCursorPosition) {
-        return getCurrentTarget().setComposingText(text, newCursorPosition);
-    }
-
-    @Override
-    public boolean setComposingRegion(int start, int end) {
-        return getCurrentTarget().setComposingRegion(start, end);
-    }
-
-    @Override
-    public boolean finishComposingText() {
-        return getCurrentTarget().finishComposingText();
-    }
-
-    @Override
-    public boolean commitText(CharSequence text, int newCursorPosition) {
-        return getCurrentTarget().commitText(text, newCursorPosition);
-    }
-
-    @Override
-    public boolean commitCompletion(CompletionInfo text) {
-        return getCurrentTarget().commitCompletion(text);
-    }
-
-    @Override
-    public boolean commitCorrection(CorrectionInfo correctionInfo) {
-        return getCurrentTarget().commitCorrection(correctionInfo);
-    }
-
-    @Override
-    public boolean setSelection(int start, int end) {
-        return getCurrentTarget().setSelection(start, end);
-    }
-
-    @Override
-    public boolean performEditorAction(int editorAction) {
-        return getCurrentTarget().performEditorAction(editorAction);
-    }
-
-    @Override
-    public boolean performContextMenuAction(int id) {
-        return getCurrentTarget().performContextMenuAction(id);
-    }
-
-    @Override
-    public boolean beginBatchEdit() {
-        return getCurrentTarget().beginBatchEdit();
-    }
-
-    @Override
-    public boolean endBatchEdit() {
-        return getCurrentTarget().endBatchEdit();
-    }
-
-    @Override
-    public boolean sendKeyEvent(KeyEvent event) {
-        return getCurrentTarget().sendKeyEvent(event);
-    }
-
-    @Override
-    public boolean clearMetaKeyStates(int states) {
-        return getCurrentTarget().clearMetaKeyStates(states);
-    }
-
-    @Override
-    public boolean reportFullscreenMode(boolean enabled) {
-        return getCurrentTarget().reportFullscreenMode(enabled);
-    }
-
-    @Override
-    public boolean performPrivateCommand(String action, Bundle data) {
-        return getCurrentTarget().performPrivateCommand(action, data);
+    public interface CreateInputConnection {
+        InputConnection create();
     }
 }

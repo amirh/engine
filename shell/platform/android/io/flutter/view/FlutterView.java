@@ -362,21 +362,25 @@ public class FlutterView extends SurfaceView
     }
 
     @Override
-    public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-        View v = getPluginRegistry().getPlatformViewsController().getView();
-        if (v != null) {
-            return v.onCreateInputConnection(outAttrs);
-        }
-        return null;
-        // try {
-        //     mLastInputConnection = mTextInputPlugin.createInputConnection(this, outAttrs);
-        //     mInputConnectionDemuxer.setDefaultInputConnection(mLastInputConnection);
-        //     mInputConnectionDemuxer.onCreateInputConnection(outAttrs);
-        //     return mInputConnectionDemuxer;
-        // } catch (JSONException e) {
-        //     Log.e(TAG, "Failed to create input connection", e);
-        //     return null;
-        // }
+    public InputConnection onCreateInputConnection(final EditorInfo outAttrs) {
+        Log.d("AMIR", "*********************** onCreateInputConnection **********************");
+        Exception e = new Exception();
+        e.printStackTrace();
+        mInputConnectionDemuxer.setDefaultInputConnectionCreator(new InputConnectionDemuxer.CreateInputConnection() {
+            @Override
+            public InputConnection create() {
+                try {
+                    return mTextInputPlugin.createInputConnection(FlutterView.this, outAttrs);
+                } catch (JSONException e) {
+                    Log.e(TAG, "Failed to create input connection", e);
+                    return null;
+                }
+            }
+        });
+            //mInputConnectionDemuxer.setDefaultInputConnection(mLastInputConnection);
+            return mInputConnectionDemuxer.onCreateInputConnection(outAttrs);
+            //return mInputConnectionDemuxer.getCurrentTarget();
+            //return mInputConnectionDemuxer.getInputConnection();
     }
 
     // Must match the PointerChange enum in pointer.dart.
@@ -1034,8 +1038,8 @@ public class FlutterView extends SurfaceView
         }
     }
 
-    // @Override
-    // public boolean checkInputConnectionProxy(View view) {
-    //     return mInputConnectionDemuxer.checkInputConnectionProxy(view);
-    // }
+    @Override
+    public boolean checkInputConnectionProxy(View view) {
+        return mInputConnectionDemuxer.checkInputConnectionProxy(view);
+    }
 }

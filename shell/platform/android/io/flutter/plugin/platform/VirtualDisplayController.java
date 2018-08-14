@@ -107,8 +107,14 @@ class VirtualDisplayController {
                         // described in: https://github.com/flutter/flutter/issues/19572
                         // We should ideally run onNewSizeFrameAvailable ASAP to make the embedded view more responsive
                         // following a resize.
+                        final ViewTreeObserver.OnDrawListener listener = this;
+                        embeddedView.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                embeddedView.getViewTreeObserver().removeOnDrawListener(listener);
+                            }
+                        });
                         embeddedView.postDelayed(onNewSizeFrameAvailable, 128);
-                        embeddedView.getViewTreeObserver().removeOnDrawListener(this);
                     }
                 });
                 embeddedView.removeOnAttachStateChangeListener(this);
