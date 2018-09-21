@@ -10,6 +10,8 @@ import android.content.Intent;
 
 import io.flutter.embedding.FlutterEngine;
 import io.flutter.plugin.common.BinaryMessenger;
+import io.flutter.plugin.platform.PlatformViewRegistry;
+import io.flutter.plugin.platform.PlatformViewsController;
 import io.flutter.view.FlutterMain;
 import io.flutter.view.TextureRegistry;
 
@@ -69,11 +71,11 @@ public class FlutterPluginRegistry
     public void attach(FlutterEngine flutterEngine, Activity activity) {
         this.flutterEngine = flutterEngine;
         mActivity = activity;
-        mPlatformViewsController.attachFlutterEngine(flutterEngine, activity);
+        mPlatformViewsController.attach(activity, flutterEngine.getRenderer(), flutterEngine);
     }
 
     public void detach() {
-        mPlatformViewsController.detachFlutterEngine();
+        mPlatformViewsController.detach();
         mPlatformViewsController.onFlutterViewDestroyed();
         flutterEngine = null;
         mActivity = null;
