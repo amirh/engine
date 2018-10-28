@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#import "FlutterOverlayView.h"
+
 #include <map>
 #include <memory>
 #include <string>
@@ -59,9 +61,9 @@ void FlutterPlatformViewsController::OnCreate(FlutterMethodCall* call, FlutterRe
                                                            viewIdentifier:viewId
                                                                 arguments:nil] retain]);
 
-  UIView* flutter_overlay = [[UIView alloc] initWithFrame:CGRectZero];
+  FlutterOverlayView* flutter_overlay = [[FlutterOverlayView alloc] init];
   flutter_overlay.autoresizingMask = (UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight);
-  flutter_overlays_[viewId] = fml::scoped_nsobject<UIView>(flutter_overlay);
+  flutter_overlays_[viewId] = fml::scoped_nsobject<FlutterOverlayView>(flutter_overlay);
 
   result(nil);
 }
@@ -106,7 +108,12 @@ sk_sp<SkSurface> FlutterPlatformViewsController::CompositeEmbeddedView(int view_
   [view setFrame:rect];
 
   composition_structure_.push_back(view_id);
-  return nullptr;
+  if (overlay_surfaces_[view_id] == nullptr) {
+    IOSSurface ios_surface = ([flutter_overlays_[view_id] createSurface]);
+    overlay_surface_[view_id] = ios_surface->createGPUSurface();
+  }
+  auto frame = overlay_surface_[view_id]->AcquireFrame();
+  return overlay_surfaces_[view_id]->AcquireBackingStore();;
 }
 
 void FlutterPlatformViewsController::Present(UIView* flutterView) {

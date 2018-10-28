@@ -5,10 +5,15 @@
 #ifndef FLUTTER_SHELL_PLATFORM_DARWIN_IOS_IOS_SURFACE_SOFTWARE_H_
 #define FLUTTER_SHELL_PLATFORM_DARWIN_IOS_IOS_SURFACE_SOFTWARE_H_
 
+#import <UIKit/UIKit.h>
+
+#import "flutter/shell/platform/darwin/ios/framework/Source/FlutterPlatformViews_Internal.h"
+
 #include "flutter/fml/macros.h"
 #include "flutter/fml/platform/darwin/scoped_nsobject.h"
 #include "flutter/shell/gpu/gpu_surface_software.h"
 #include "flutter/shell/platform/darwin/ios/ios_surface.h"
+#include "flutter/shell/platform/darwin/ios/ios_render_surface_software.h"
 
 @class CALayer;
 
@@ -44,10 +49,9 @@ class IOSSurfaceSoftware final : public IOSSurface, public GPUSurfaceSoftwareDel
   flow::ExternalViewEmbedder* GetExternalViewEmbedder() override;
 
  private:
-  fml::scoped_nsobject<CALayer> layer_;
+  IOSRenderSurfaceSoftware render_surface_;
   UIView* root_view_;
   fml::scoped_nsprotocol<::shell::GetPlatformViewsController> get_platform_views_controller_;
-  sk_sp<SkSurface> sk_surface_;
 
   FML_DISALLOW_COPY_AND_ASSIGN(IOSSurfaceSoftware);
 };
