@@ -59,6 +59,10 @@ void FlutterPlatformViewsController::OnCreate(FlutterMethodCall* call, FlutterRe
                                                            viewIdentifier:viewId
                                                                 arguments:nil] retain]);
 
+  UIView* flutter_overlay = [[UIView alloc] initWithFrame:CGRectZero];
+  flutter_overlay.autoresizingMask = (UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight);
+  flutter_overlays_[viewId] = fml::scoped_nsobject<UIView>(flutter_overlay);
+
   result(nil);
 }
 
@@ -88,7 +92,7 @@ void FlutterPlatformViewsController::RegisterViewFactory(
       fml::scoped_nsobject<NSObject<FlutterPlatformViewFactory>>([factory retain]);
 }
 
-void FlutterPlatformViewsController::CompositeEmbeddedView(int view_id,
+sk_sp<SkSurface> FlutterPlatformViewsController::CompositeEmbeddedView(int view_id,
                                                            const flow::EmbeddedViewParams& params) {
   // TODO(amirh): assert that this is running on the platform thread once we support the iOS
   // embedded views thread configuration.
@@ -100,7 +104,9 @@ void FlutterPlatformViewsController::CompositeEmbeddedView(int view_id,
 
   UIView* view = views_[view_id];
   [view setFrame:rect];
+
   composition_structure_.push_back(view_id);
+  return nullptr;
 }
 
 void FlutterPlatformViewsController::Present(UIView* flutterView) {
@@ -112,8 +118,11 @@ void FlutterPlatformViewsController::Present(UIView* flutterView) {
     NSLog(@"composition structure changed");
     current_composition_structure_.clear();
     for (size_t i = 0; i < composition_structure_.size(); i++) {
-      [flutterView addSubview:views_[composition_structure_[i]].get()];
-      current_composition_structure_.push_back(composition_structure_[i]);
+      int64_t view_id = composition_structure_[i];
+      current_composition_structure_.push_back(view_id);
+
+      [flutterView addSubview:views_[view_id].get()];
+      [flutterView addSubview:flutter_overlays_[view_id].get()];
     }
   }
   composition_structure_.clear();

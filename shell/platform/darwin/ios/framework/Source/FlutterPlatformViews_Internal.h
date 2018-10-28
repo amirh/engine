@@ -20,7 +20,7 @@ class FlutterPlatformViewsController : public flow::ExternalViewEmbedder {
 
   void RegisterViewFactory(NSObject<FlutterPlatformViewFactory>* factory, NSString* factoryId);
 
-  void CompositeEmbeddedView(int view_id, const flow::EmbeddedViewParams& params);
+  sk_sp<SkSurface> CompositeEmbeddedView(int view_id, const flow::EmbeddedViewParams& params);
 
   void Present(UIView* flutterView);
 
@@ -28,6 +28,7 @@ class FlutterPlatformViewsController : public flow::ExternalViewEmbedder {
   fml::scoped_nsobject<FlutterMethodChannel> channel_;
   std::map<std::string, fml::scoped_nsobject<NSObject<FlutterPlatformViewFactory>>> factories_;
   std::map<int64_t, fml::scoped_nsobject<UIView>> views_;
+  std::map<int64_t, fml::scoped_nsobject<UIView>> flutter_overlays_;
 
   std::vector<int64_t> composition_structure_;
   std::vector<int64_t> current_composition_structure_;

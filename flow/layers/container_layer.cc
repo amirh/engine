@@ -40,6 +40,7 @@ void ContainerLayer::PrerollChildren(PrerollContext* context,
 void ContainerLayer::PaintChildren(PaintContext& context) const {
   FML_DCHECK(needs_painting());
 
+  SkCanvas* current_layer_canvas = context.canvas;
   // Intentionally not tracing here as there should be no self-time
   // and the trace event on this common function has a small overhead.
   for (auto& layer : layers_) {
@@ -47,6 +48,7 @@ void ContainerLayer::PaintChildren(PaintContext& context) const {
       layer->Paint(context);
     }
   }
+  context.canvas = current_layer_canvas;
 }
 
 #if defined(OS_FUCHSIA)

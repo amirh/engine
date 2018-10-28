@@ -28,6 +28,9 @@ void PlatformViewLayer::Paint(PaintContext& context) const {
       SkPoint::Make(transform.getTranslateX(), transform.getTranslateY());
   params.sizePoints = size_;
 
-  context.view_embedder->CompositeEmbeddedView(view_id_, params);
+  sk_sp<SkSurface> new_surface =  context.view_embedder->CompositeEmbeddedView(view_id_, params);
+  if (new_surface)  {
+    context.canvas = new_surface->getCanvas();
+  }
 }
 }  // namespace flow

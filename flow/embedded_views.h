@@ -6,6 +6,7 @@
 #define FLUTTER_FLOW_EMBEDDED_VIEWS_H_
 
 #include "flutter/fml/memory/ref_counted.h"
+#include "third_party/skia/include/core/SkSurface.h"
 #include "third_party/skia/include/core/SkPoint.h"
 #include "third_party/skia/include/core/SkSize.h"
 
@@ -25,8 +26,8 @@ class ExternalViewEmbedder {
   ExternalViewEmbedder() = default;
 
   // Must be called on the UI thread.
-  virtual void CompositeEmbeddedView(int view_id,
-                                     const EmbeddedViewParams& params) {}
+  virtual sk_sp<SkSurface> CompositeEmbeddedView(int view_id,
+                                     const EmbeddedViewParams& params) { return nullptr; }
 
   virtual ~ExternalViewEmbedder() = default;
 
