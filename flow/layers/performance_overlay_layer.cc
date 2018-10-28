@@ -11,7 +11,7 @@
 namespace flow {
 namespace {
 
-void DrawStatisticsText(SkCanvas& canvas,
+void DrawStatisticsText(SkCanvas* canvas,
                         const std::string& string,
                         int x,
                         int y) {
@@ -19,10 +19,10 @@ void DrawStatisticsText(SkCanvas& canvas,
   paint.setTextSize(15);
   paint.setLinearText(false);
   paint.setColor(SK_ColorGRAY);
-  canvas.drawText(string.c_str(), string.size(), x, y, paint);
+  canvas->drawText(string.c_str(), string.size(), x, y, paint);
 }
 
-void VisualizeStopWatch(SkCanvas& canvas,
+void VisualizeStopWatch(SkCanvas* canvas,
                         const Stopwatch& stopwatch,
                         SkScalar x,
                         SkScalar y,
@@ -36,7 +36,7 @@ void VisualizeStopWatch(SkCanvas& canvas,
 
   if (show_graph) {
     SkRect visualization_rect = SkRect::MakeXYWH(x, y, width, height);
-    stopwatch.Visualize(canvas, visualization_rect);
+    stopwatch.Visualize(*canvas, visualization_rect);
   }
 
   if (show_labels) {
@@ -73,7 +73,7 @@ void PerformanceOverlayLayer::Paint(PaintContext& context) const {
   SkScalar y = paint_bounds().y() + padding;
   SkScalar width = paint_bounds().width() - (padding * 2);
   SkScalar height = paint_bounds().height() / 2;
-  SkAutoCanvasRestore save(&context.canvas, true);
+  SkAutoCanvasRestore save(context.canvas, true);
 
   VisualizeStopWatch(context.canvas, context.frame_time, x, y, width,
                      height - padding,
