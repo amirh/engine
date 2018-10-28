@@ -17,7 +17,8 @@ namespace shell {
 class IOSSurfaceSoftware final : public IOSSurface, public GPUSurfaceSoftwareDelegate {
  public:
   IOSSurfaceSoftware(fml::scoped_nsobject<CALayer> layer,
-                     ::shell::GetExternalViewEmbedder get_view_embedder);
+                     UIView* root_view,
+                     ::shell::GetPlatformViewsController get_platform_views_controller);
 
   ~IOSSurfaceSoftware() override;
 
@@ -44,7 +45,8 @@ class IOSSurfaceSoftware final : public IOSSurface, public GPUSurfaceSoftwareDel
 
  private:
   fml::scoped_nsobject<CALayer> layer_;
-  fml::scoped_nsprotocol<::shell::GetExternalViewEmbedder> get_view_embedder_;
+  UIView* root_view_;
+  fml::scoped_nsprotocol<::shell::GetPlatformViewsController> get_platform_views_controller_;
   sk_sp<SkSurface> sk_surface_;
 
   FML_DISALLOW_COPY_AND_ASSIGN(IOSSurfaceSoftware);

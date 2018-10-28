@@ -10,10 +10,11 @@
 #include "flutter/fml/macros.h"
 #include "flutter/fml/platform/darwin/scoped_nsobject.h"
 #include "flutter/shell/common/surface.h"
+#include "flutter/shell/platform/darwin/ios/framework/Source/FlutterPlatformViews_Internal.h"
 
 namespace shell {
 
-typedef flow::ExternalViewEmbedder* (^GetExternalViewEmbedder)(void);
+typedef FlutterPlatformViewsController* (^GetPlatformViewsController)(void);
 
 class IOSSurface {
  public:

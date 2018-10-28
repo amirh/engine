@@ -13,9 +13,7 @@
 namespace shell {
 
 FlutterPlatformViewsController::FlutterPlatformViewsController(
-    NSObject<FlutterBinaryMessenger>* messenger,
-    FlutterView* flutter_view)
-    : flutter_view_([flutter_view retain]) {
+    NSObject<FlutterBinaryMessenger>* messenger) {
   channel_.reset([[FlutterMethodChannel alloc]
          initWithName:@"flutter/platform_views"
       binaryMessenger:messenger
@@ -61,8 +59,6 @@ void FlutterPlatformViewsController::OnCreate(FlutterMethodCall* call, FlutterRe
                                                            viewIdentifier:viewId
                                                                 arguments:nil] retain]);
 
-  FlutterView* flutter_view = flutter_view_.get();
-  [flutter_view addSubview:views_[viewId].get()];
   result(nil);
 }
 
@@ -104,6 +100,23 @@ void FlutterPlatformViewsController::CompositeEmbeddedView(int view_id,
 
   UIView* view = views_[view_id];
   [view setFrame:rect];
+  composition_structure_.push_back(view_id);
+}
+
+void FlutterPlatformViewsController::Present(UIView* flutterView) {
+  NSLog(@"present composited views");
+  if (current_composition_structure_ != composition_structure_) {
+    for (UIView *subView in [flutterView subviews]) {
+      [subView removeFromSuperview];
+    }
+    NSLog(@"composition structure changed");
+    current_composition_structure_.clear();
+    for (size_t i = 0; i < composition_structure_.size(); i++) {
+      [flutterView addSubview:views_[composition_structure_[i]].get()];
+      current_composition_structure_.push_back(composition_structure_[i]);
+    }
+  }
+  composition_structure_.clear();
 }
 
 }  // namespace shell

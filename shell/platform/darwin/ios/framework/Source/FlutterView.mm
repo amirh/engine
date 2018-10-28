@@ -93,16 +93,16 @@ id<FlutterScreenshotDelegate> _delegate;
 }
 
 - (std::unique_ptr<shell::IOSSurface>)createSurface {
-  ::shell::GetExternalViewEmbedder get_view_embedder = [[^() {
-    return [[self flutterViewController] viewEmbedder];
+  ::shell::GetPlatformViewsController get_platform_views_controller = [[^() {
+    return [[self flutterViewController] platformViewsController];
   } copy] autorelease];
   if ([self.layer isKindOfClass:[CAEAGLLayer class]]) {
     fml::scoped_nsobject<CAEAGLLayer> eagl_layer(
         reinterpret_cast<CAEAGLLayer*>([self.layer retain]));
-    return std::make_unique<shell::IOSSurfaceGL>(std::move(eagl_layer), get_view_embedder);
+    return std::make_unique<shell::IOSSurfaceGL>(std::move(eagl_layer), self, get_platform_views_controller);
   } else {
     fml::scoped_nsobject<CALayer> layer(reinterpret_cast<CALayer*>([self.layer retain]));
-    return std::make_unique<shell::IOSSurfaceSoftware>(std::move(layer), get_view_embedder);
+    return std::make_unique<shell::IOSSurfaceSoftware>(std::move(layer), self, get_platform_views_controller);
   }
 }
 
