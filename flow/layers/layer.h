@@ -98,6 +98,7 @@ class Layer {
 
     const PaintContext& paint_context_;
     const SkRect bounds_;
+    SkCanvas* canvas_;
   };
 
   virtual void Paint(PaintContext& context) const = 0;

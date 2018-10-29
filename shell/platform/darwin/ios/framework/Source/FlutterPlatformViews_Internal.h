@@ -18,7 +18,7 @@ namespace shell {
 
 class FlutterPlatformViewsController : public flow::ExternalViewEmbedder {
  public:
-  FlutterPlatformViewsController(NSObject<FlutterBinaryMessenger>* messenger);
+  FlutterPlatformViewsController(NSObject<FlutterBinaryMessenger>* messenger, UIView* flutterView);
 
   void RegisterViewFactory(NSObject<FlutterPlatformViewFactory>* factory, NSString* factoryId);
 
@@ -32,6 +32,8 @@ class FlutterPlatformViewsController : public flow::ExternalViewEmbedder {
   std::map<int64_t, fml::scoped_nsobject<UIView>> views_;
   std::map<int64_t, fml::scoped_nsobject<FlutterOverlayView>> flutter_overlays_;
   std::map<int64_t, std::unique_ptr<Surface>> overlay_surfaces_;
+  std::map<int64_t, std::unique_ptr<IOSSurface>> overlay_ios_surfaces_;
+  std::vector<std::unique_ptr<SurfaceFrame>> surface_frames_;
 
   std::vector<int64_t> composition_structure_;
   std::vector<int64_t> current_composition_structure_;
@@ -39,6 +41,8 @@ class FlutterPlatformViewsController : public flow::ExternalViewEmbedder {
   void OnMethodCall(FlutterMethodCall* call, FlutterResult& result);
   void OnCreate(FlutterMethodCall* call, FlutterResult& result);
   void OnDispose(FlutterMethodCall* call, FlutterResult& result);
+
+  UIView* flutter_view_;
 
   FML_DISALLOW_COPY_AND_ASSIGN(FlutterPlatformViewsController);
 };

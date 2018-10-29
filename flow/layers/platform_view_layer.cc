@@ -27,10 +27,13 @@ void PlatformViewLayer::Paint(PaintContext& context) const {
   params.offsetPixels =
       SkPoint::Make(transform.getTranslateX(), transform.getTranslateY());
   params.sizePoints = size_;
+  params.canvasSize = context.canvas->getBaseLayerSize();
 
   sk_sp<SkSurface> new_surface =  context.view_embedder->CompositeEmbeddedView(view_id_, params);
   if (new_surface)  {
-    context.canvas = new_surface->getCanvas();
+   SkCanvas* currentCanvas = context.canvas;
+   context.canvas = new_surface->getCanvas();
+   context.canvas->concat(currentCanvas->getTotalMatrix());
   }
 }
 }  // namespace flow

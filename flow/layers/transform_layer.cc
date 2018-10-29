@@ -35,10 +35,16 @@ void TransformLayer::UpdateScene(SceneUpdateContext& context) {
 void TransformLayer::Paint(PaintContext& context) const {
   TRACE_EVENT0("flutter", "TransformLayer::Paint");
   FML_DCHECK(needs_painting());
-
+  SkCanvas* canvas = context.canvas;
   SkAutoCanvasRestore save(context.canvas, true);
   context.canvas->concat(transform_);
   PaintChildren(context);
+  if (canvas != context.canvas) {
+    SkMatrix invert;
+    if(transform_.invert(&invert)) {
+      context.canvas->concat(invert);
+    }
+  }
 }
 
 }  // namespace flow

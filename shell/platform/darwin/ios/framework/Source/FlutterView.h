@@ -31,6 +31,7 @@
                           opaque:(BOOL)opaque NS_DESIGNATED_INITIALIZER;
 - (std::unique_ptr<shell::IOSSurface>)createSurface;
 
+- (EAGLSharegroup*) sharegroup;
 @end
 
 #endif  // SHELL_PLATFORM_IOS_FRAMEWORK_SOURCE_FLUTTER_VIEW_H_

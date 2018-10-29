@@ -26,12 +26,14 @@ Layer::AutoSaveLayer::AutoSaveLayer(const PaintContext& paint_context,
                                     const SkRect& bounds,
                                     const SkPaint* paint)
     : paint_context_(paint_context), bounds_(bounds) {
+  canvas_ = paint_context_.canvas;
   paint_context_.canvas->saveLayer(bounds_, paint);
 }
 
 Layer::AutoSaveLayer::AutoSaveLayer(const PaintContext& paint_context,
                                     const SkCanvas::SaveLayerRec& layer_rec)
     : paint_context_(paint_context), bounds_(*layer_rec.fBounds) {
+  canvas_ = paint_context_.canvas;
   paint_context_.canvas->saveLayer(layer_rec);
 }
 
@@ -52,7 +54,7 @@ Layer::AutoSaveLayer::~AutoSaveLayer() {
   if (paint_context_.checkerboard_offscreen_layers) {
     DrawCheckerboard(paint_context_.canvas, bounds_);
   }
-  paint_context_.canvas->restore();
+  canvas_->restore();
 }
 
 }  // namespace flow

@@ -36,6 +36,7 @@
 
   if (self) {
     self.layer.opaque = NO;
+    self.userInteractionEnabled = NO;
   }
 
   return self;
@@ -61,15 +62,15 @@
 #endif  // TARGET_IPHONE_SIMULATOR
 }
 
-- (std::unique_ptr<shell::IOSSurface>)createSurface {
-  // if ([self.layer isKindOfClass:[CAEAGLLayer class]]) {
-  //   fml::scoped_nsobject<CAEAGLLayer> eagl_layer(
-  //       reinterpret_cast<CAEAGLLayer*>([self.layer retain]));
-  //   return std::make_unique<shell::IOSSurfaceGL>(std::move(eagl_layer), nil, nil);
-  // } else {
+- (std::unique_ptr<shell::IOSSurface>)createSurface: (EAGLSharegroup*) shareGroup {
+  if ([self.layer isKindOfClass:[CAEAGLLayer class]]) {
+    fml::scoped_nsobject<CAEAGLLayer> eagl_layer(
+        reinterpret_cast<CAEAGLLayer*>([self.layer retain]));
+    return std::make_unique<shell::IOSRenderSurfaceGL>(std::move(eagl_layer), shareGroup);
+  } else {
     fml::scoped_nsobject<CALayer> layer(reinterpret_cast<CALayer*>([self.layer retain]));
     return std::make_unique<shell::IOSRenderSurfaceSoftware>(std::move(layer));
-  // }
+  }
 }
 
 - (BOOL)enableInputClicksWhenVisible {

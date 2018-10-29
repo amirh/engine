@@ -114,7 +114,7 @@
 
   [self setupNotificationCenterObservers];
   _platformViewsController.reset(
-      new shell::FlutterPlatformViewsController(_engine.get()));
+      new shell::FlutterPlatformViewsController(_engine.get(), _flutterView.get()));
 }
 
 - (fml::scoped_nsobject<FlutterEngine>)engine {

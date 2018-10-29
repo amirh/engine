@@ -12,6 +12,7 @@
 #include "flutter/shell/gpu/gpu_surface_gl.h"
 #include "flutter/shell/platform/darwin/ios/ios_gl_context.h"
 #include "flutter/shell/platform/darwin/ios/ios_surface.h"
+#include "flutter/shell/platform/darwin/ios/ios_render_surface_gl.h"
 
 @class CAEAGLLayer;
 
@@ -46,8 +47,10 @@ class IOSSurfaceGL : public IOSSurface, public GPUSurfaceGLDelegate {
   // |shell::GPUSurfaceGLDelegate|
   flow::ExternalViewEmbedder* GetExternalViewEmbedder() override;
 
+  EAGLSharegroup* GetShareGroup();
+
  private:
-  IOSGLContext context_;
+  IOSRenderSurfaceGL render_surface_;
   UIView* root_view_;
 
   fml::scoped_nsprotocol<::shell::GetPlatformViewsController> get_platform_views_controller_;

@@ -14,22 +14,20 @@ namespace shell {
 IOSSurfaceGL::IOSSurfaceGL(fml::scoped_nsobject<CAEAGLLayer> layer,
                            UIView* root_view,
                            ::shell::GetPlatformViewsController get_platform_views_controller)
-    : context_(std::move(layer)), root_view_(root_view), get_platform_views_controller_([get_platform_views_controller retain]) {}
+    : render_surface_(layer), root_view_(root_view), get_platform_views_controller_([get_platform_views_controller retain]) {}
 
 IOSSurfaceGL::~IOSSurfaceGL() = default;
 
 bool IOSSurfaceGL::IsValid() const {
-  return context_.IsValid();
+  return render_surface_.IsValid();;
 }
 
 bool IOSSurfaceGL::ResourceContextMakeCurrent() {
-  return IsValid() ? context_.ResourceMakeCurrent() : false;
+  return render_surface_.ResourceContextMakeCurrent();
 }
 
 void IOSSurfaceGL::UpdateStorageSizeIfNecessary() {
-  if (IsValid()) {
-    context_.UpdateStorageSizeIfNecessary();
-  }
+  render_surface_.UpdateStorageSizeIfNecessary();
 }
 
 std::unique_ptr<Surface> IOSSurfaceGL::CreateGPUSurface() {
@@ -37,33 +35,26 @@ std::unique_ptr<Surface> IOSSurfaceGL::CreateGPUSurface() {
 }
 
 intptr_t IOSSurfaceGL::GLContextFBO() const {
-  return IsValid() ? context_.framebuffer() : GL_NONE;
+  return render_surface_.GLContextFBO();
 }
 
 bool IOSSurfaceGL::UseOffscreenSurface() const {
-  // The onscreen surface wraps a GL renderbuffer, which is extremely slow to read.
-  // Certain filter effects require making a copy of the current destination, so we
-  // always render to an offscreen surface, which will be much quicker to read/copy.
-  return true;
+  return render_surface_.UseOffscreenSurface();
 }
 
 bool IOSSurfaceGL::GLContextMakeCurrent() {
-  return IsValid() ? context_.MakeCurrent() : false;
+  return render_surface_.GLContextMakeCurrent();
 }
 
 bool IOSSurfaceGL::GLContextClearCurrent() {
-  [EAGLContext setCurrentContext:nil];
-  return true;
+  return render_surface_.GLContextClearCurrent();
 }
 
 bool IOSSurfaceGL::GLContextPresent() {
-  TRACE_EVENT0("flutter", "IOSSurfaceGL::GLContextPresent");
-  if (!IsValid()) {
+  if (!render_surface_.GLContextPresent()) {
     return false;
   }
-  if (!context_.PresentRenderBuffer()) {
-    return false;
-  }
+
   get_platform_views_controller_.get()()->Present(root_view_);
   return true;
 }
@@ -72,4 +63,7 @@ flow::ExternalViewEmbedder* IOSSurfaceGL::GetExternalViewEmbedder() {
   return get_platform_views_controller_.get()();
 }
 
+EAGLSharegroup* IOSSurfaceGL::GetShareGroup() {
+  return render_surface_.GetShareGroup();
+}
 }  // namespace shell

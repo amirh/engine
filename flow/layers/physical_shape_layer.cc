@@ -117,10 +117,10 @@ void PhysicalShapeLayer::Paint(PaintContext& context) const {
     // anti-aliased drawPath will always have such artifacts.
     context.canvas->drawPaint(paint);
   }
-
+  SkCanvas* canvas = context.canvas;
   PaintChildren(context);
 
-  context.canvas->restoreToCount(saveCount);
+  canvas->restoreToCount(saveCount);
 }
 
 void PhysicalShapeLayer::DrawShadow(SkCanvas* canvas,

@@ -16,6 +16,7 @@ class EmbeddedViewParams {
  public:
   SkPoint offsetPixels;
   SkSize sizePoints;
+  SkISize canvasSize;
 };
 
 // This is only used on iOS when running in a non headless mode,

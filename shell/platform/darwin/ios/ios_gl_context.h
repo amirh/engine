@@ -18,7 +18,7 @@ namespace shell {
 
 class IOSGLContext {
  public:
-  IOSGLContext(fml::scoped_nsobject<CAEAGLLayer> layer);
+  IOSGLContext(fml::scoped_nsobject<CAEAGLLayer> layer, EAGLSharegroup* share_group = nullptr);
 
   ~IOSGLContext();
 
@@ -35,6 +35,8 @@ class IOSGLContext {
   bool ResourceMakeCurrent();
 
   sk_sp<SkColorSpace> ColorSpace() const { return color_space_; }
+
+  EAGLSharegroup* GetShareGroup();
 
  private:
   fml::scoped_nsobject<CAEAGLLayer> layer_;

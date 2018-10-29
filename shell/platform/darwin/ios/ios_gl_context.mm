@@ -12,14 +12,20 @@
 
 namespace shell {
 
-IOSGLContext::IOSGLContext(fml::scoped_nsobject<CAEAGLLayer> layer)
+IOSGLContext::IOSGLContext(fml::scoped_nsobject<CAEAGLLayer> layer, EAGLSharegroup* share_group)
     : layer_(std::move(layer)),
       framebuffer_(GL_NONE),
       colorbuffer_(GL_NONE),
       storage_size_width_(0),
       storage_size_height_(0),
       valid_(false) {
-  context_.reset([[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3]);
+  if (share_group == nullptr) {
+    NSLog(@"creating gl context with no share group");
+    context_.reset([[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3]);
+  } else {
+    NSLog(@"creating gl context with share group");
+    context_.reset([[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3 sharegroup:share_group]);
+  }
   if (context_ != nullptr) {
     resource_context_.reset([[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3
                                                   sharegroup:context_.get().sharegroup]);
@@ -162,6 +168,10 @@ bool IOSGLContext::MakeCurrent() {
 
 bool IOSGLContext::ResourceMakeCurrent() {
   return [EAGLContext setCurrentContext:resource_context_.get()];
+}
+
+EAGLSharegroup* IOSGLContext::GetShareGroup() {
+  return [context_ sharegroup];
 }
 
 }  // namespace shell

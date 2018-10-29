@@ -38,7 +38,17 @@ void IOSRenderSurfaceSoftware::UpdateStorageSizeIfNecessary() {
 }
 
 std::unique_ptr<Surface> IOSRenderSurfaceSoftware::CreateGPUSurface() {
-  return nullptr;
+  if (!IsValid()) {
+    return nullptr;
+  }
+
+  auto surface = std::make_unique<GPUSurfaceSoftware>(this);
+
+  if (!surface->IsValid()) {
+    return nullptr;
+  }
+
+  return surface;
 }
 
 sk_sp<SkSurface> IOSRenderSurfaceSoftware::AcquireBackingStore(const SkISize& size) {
@@ -113,6 +123,10 @@ bool IOSRenderSurfaceSoftware::PresentBackingStore(sk_sp<SkSurface> backing_stor
   layer_.get().contents = reinterpret_cast<id>(static_cast<CGImageRef>(pixmap_image));
 
   return true;
+}
+
+flow::ExternalViewEmbedder* IOSRenderSurfaceSoftware::GetExternalViewEmbedder() {
+  return nullptr;
 }
 
 }  // namespace shell

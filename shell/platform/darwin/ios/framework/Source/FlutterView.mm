@@ -21,7 +21,9 @@
 
 @end
 
-@implementation FlutterView
+@implementation FlutterView {
+  EAGLSharegroup* share_group_;
+}
 
 id<FlutterScreenshotDelegate> _delegate;
 
@@ -99,7 +101,9 @@ id<FlutterScreenshotDelegate> _delegate;
   if ([self.layer isKindOfClass:[CAEAGLLayer class]]) {
     fml::scoped_nsobject<CAEAGLLayer> eagl_layer(
         reinterpret_cast<CAEAGLLayer*>([self.layer retain]));
-    return std::make_unique<shell::IOSSurfaceGL>(std::move(eagl_layer), self, get_platform_views_controller);
+    std::unique_ptr<shell::IOSSurfaceGL> surface = std::make_unique<shell::IOSSurfaceGL>(std::move(eagl_layer), self, get_platform_views_controller);
+    share_group_ = surface->GetShareGroup();
+    return surface;
   } else {
     fml::scoped_nsobject<CALayer> layer(reinterpret_cast<CALayer*>([self.layer retain]));
     return std::make_unique<shell::IOSSurfaceSoftware>(std::move(layer), self, get_platform_views_controller);
@@ -155,6 +159,10 @@ id<FlutterScreenshotDelegate> _delegate;
   CGContextScaleCTM(context, 1.0, -1.0);
   CGContextDrawImage(context, frame_rect, image);
   CGContextRestoreGState(context);
+}
+
+- (EAGLSharegroup*) sharegroup {
+  return share_group_;
 }
 
 @end

@@ -16,7 +16,7 @@
 
 namespace shell {
 
-class IOSRenderSurfaceSoftware final : public IOSSurface {
+  class IOSRenderSurfaceSoftware final : public IOSSurface , public GPUSurfaceSoftwareDelegate {
  public:
   IOSRenderSurfaceSoftware(fml::scoped_nsobject<CALayer> layer);
 
@@ -34,9 +34,14 @@ class IOSRenderSurfaceSoftware final : public IOSSurface {
   // |shell::IOSSurface|
   std::unique_ptr<Surface> CreateGPUSurface() override;
 
-  sk_sp<SkSurface> AcquireBackingStore(const SkISize& size);
+  // |shell::GPUSurfaceSoftwareDelegate|
+  sk_sp<SkSurface> AcquireBackingStore(const SkISize& size) override;
 
-  bool PresentBackingStore(sk_sp<SkSurface> backing_store);
+  // |shell::GPUSurfaceSoftwareDelegate|
+  bool PresentBackingStore(sk_sp<SkSurface> backing_store) override;
+
+  // |shell::GPUSurfaceSoftwareDelegate|
+  flow::ExternalViewEmbedder* GetExternalViewEmbedder() override;
 
  private:
   fml::scoped_nsobject<CALayer> layer_;

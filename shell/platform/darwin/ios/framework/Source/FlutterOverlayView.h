@@ -11,7 +11,7 @@
 
 #include "flutter/fml/memory/weak_ptr.h"
 #include "flutter/shell/common/shell.h"
-//#include "flutter/shell/platform/darwin/ios/ios_surface.h"
+#include "flutter/shell/platform/darwin/ios/ios_surface.h"
 
 @interface FlutterOverlayView : UIView
 
@@ -19,7 +19,7 @@
 - (instancetype)initWithCoder:(NSCoder*)aDecoder NS_UNAVAILABLE;
 
 - (instancetype)init NS_DESIGNATED_INITIALIZER;
-//- (std::unique_ptr<shell::IOSSurface>)createSurface;
+- (std::unique_ptr<shell::IOSSurface>)createSurface: (EAGLSharegroup*) shareGroup;
 
 @end
 

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #import "FlutterOverlayView.h"
+#import "FlutterView.h"
 
 #include <map>
 #include <memory>
@@ -11,11 +12,12 @@
 #include "FlutterPlatformViews_Internal.h"
 #include "flutter/fml/platform/darwin/scoped_nsobject.h"
 #include "flutter/shell/platform/darwin/ios/framework/Headers/FlutterChannels.h"
+#include "flutter/shell/platform/darwin/ios/ios_surface.h"
 
 namespace shell {
 
 FlutterPlatformViewsController::FlutterPlatformViewsController(
-    NSObject<FlutterBinaryMessenger>* messenger) {
+   NSObject<FlutterBinaryMessenger>* messenger, UIView* flutterView) : flutter_view_(flutterView){
   channel_.reset([[FlutterMethodChannel alloc]
          initWithName:@"flutter/platform_views"
       binaryMessenger:messenger
@@ -109,20 +111,30 @@ sk_sp<SkSurface> FlutterPlatformViewsController::CompositeEmbeddedView(int view_
 
   composition_structure_.push_back(view_id);
   if (overlay_surfaces_[view_id] == nullptr) {
-    IOSSurface ios_surface = ([flutter_overlays_[view_id] createSurface]);
-    overlay_surface_[view_id] = ios_surface->createGPUSurface();
+    FlutterView* flutter_view = (FlutterView*) flutter_view_;
+    EAGLSharegroup* sharegroup = [flutter_view sharegroup];
+    //FlutterOverlayView* overlay_view = flutter_overlays_[view_id)].get();
+    overlay_ios_surfaces_[view_id] = [flutter_overlays_[view_id].get() createSurface:sharegroup];
+    overlay_surfaces_[view_id] = std::unique_ptr<Surface>(overlay_ios_surfaces_[view_id]->CreateGPUSurface());
   }
-  auto frame = overlay_surface_[view_id]->AcquireFrame();
-  return overlay_surfaces_[view_id]->AcquireBackingStore();;
+  auto& surface = overlay_surfaces_[view_id];
+  std::unique_ptr<SurfaceFrame> surface_frame(surface->AcquireFrame(params.canvasSize));
+  surface_frames_.push_back(std::move(surface_frame));
+
+  SkCanvas* canvas = surface_frames_.back()->SkiaSurface()->getCanvas();
+  canvas->clear(SkColorSetARGB(0x00, 0x00, 0x00, 0x00));
+  return surface_frames_.back()->SkiaSurface();
 }
 
 void FlutterPlatformViewsController::Present(UIView* flutterView) {
-  NSLog(@"present composited views");
+  for (size_t i = 0; i < surface_frames_.size(); i++) {
+    surface_frames_[i]->Submit();
+  }
+  surface_frames_.clear();
   if (current_composition_structure_ != composition_structure_) {
     for (UIView *subView in [flutterView subviews]) {
       [subView removeFromSuperview];
     }
-    NSLog(@"composition structure changed");
     current_composition_structure_.clear();
     for (size_t i = 0; i < composition_structure_.size(); i++) {
       int64_t view_id = composition_structure_[i];
@@ -130,6 +142,7 @@ void FlutterPlatformViewsController::Present(UIView* flutterView) {
 
       [flutterView addSubview:views_[view_id].get()];
       [flutterView addSubview:flutter_overlays_[view_id].get()];
+      [flutter_overlays_[view_id].get() setFrame: flutterView.bounds];
     }
   }
   composition_structure_.clear();
