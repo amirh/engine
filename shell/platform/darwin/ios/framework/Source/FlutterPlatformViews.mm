@@ -138,12 +138,16 @@ void FlutterPlatformViewsController::PrerollCompositeEmbeddedView(int view_id) {
   EnsureOverlayInitialized(view_id);
   composition_frames_[view_id] = (overlays_[view_id]->surface->AcquireFrame(frame_size_));
   composition_order_.push_back(view_id);
+  SkCanvas* canvas = composition_frames_[view_id]->SkiaCanvas();
+  canvas->clear(SK_ColorTRANSPARENT);
 }
 
-  void FlutterPlatformViewsController::GLPrerollCompositeEmbeddedView(int view_id, std::shared_ptr<IOSGLContext> context) {
-    EnsureGLOverlayInitialized(view_id,std::move(context));
-    composition_frames_[view_id] = (overlays_[view_id]->surface->AcquireFrame(frame_size_));
-    composition_order_.push_back(view_id);
+void FlutterPlatformViewsController::GLPrerollCompositeEmbeddedView(int view_id, std::shared_ptr<IOSGLContext> context) {
+  EnsureGLOverlayInitialized(view_id,std::move(context));
+  composition_frames_[view_id] = (overlays_[view_id]->surface->AcquireFrame(frame_size_));
+  composition_order_.push_back(view_id);
+  SkCanvas* canvas = composition_frames_[view_id]->SkiaCanvas();
+  canvas->clear(SK_ColorTRANSPARENT);
 }
 
 std::vector<SkCanvas*> FlutterPlatformViewsController::GetCurrentCanvases() {
@@ -170,15 +174,14 @@ SkCanvas* FlutterPlatformViewsController::CompositeEmbeddedView(
   UIView* view = views_[view_id].get();
   [view setFrame:rect];
 
-  SkCanvas* canvas = composition_frames_[view_id]->SkiaCanvas();
-  canvas->clear(SK_ColorTRANSPARENT);
-  return canvas;
+  return composition_frames_[view_id]->SkiaCanvas();
 }
 
 bool FlutterPlatformViewsController::Present() {
   bool did_submit = true;
   for (size_t i = 0; i < composition_order_.size(); i++) {
     int64_t view_id = composition_order_[i];
+    composition_frames_[view_id]->SkiaCanvas()->flush();
     did_submit &= composition_frames_[view_id]->Submit();
   }
   composition_frames_.clear();
