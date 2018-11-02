@@ -11,21 +11,23 @@ namespace shell {
 
 IOSSurfaceGL::IOSSurfaceGL(fml::scoped_nsobject<CAEAGLLayer> layer,
                            FlutterPlatformViewsController* platform_views_controller)
-    : IOSSurface(platform_views_controller), context_(std::move(layer)) {}
+    : IOSSurface(platform_views_controller), context_() {
+  render_target_ = context_.CreateRenderTarget(std::move(layer));
+}
 
 IOSSurfaceGL::~IOSSurfaceGL() = default;
 
 bool IOSSurfaceGL::IsValid() const {
-  return context_.IsValid();
+  return render_target_->IsValid();
 }
 
 bool IOSSurfaceGL::ResourceContextMakeCurrent() {
-  return IsValid() ? context_.ResourceMakeCurrent() : false;
+  return render_target_->IsValid() ? context_.ResourceMakeCurrent() : false;
 }
 
 void IOSSurfaceGL::UpdateStorageSizeIfNecessary() {
   if (IsValid()) {
-    context_.UpdateStorageSizeIfNecessary();
+    render_target_->UpdateStorageSizeIfNecessary();
   }
 }
 
@@ -34,7 +36,7 @@ std::unique_ptr<Surface> IOSSurfaceGL::CreateGPUSurface() {
 }
 
 intptr_t IOSSurfaceGL::GLContextFBO() const {
-  return IsValid() ? context_.framebuffer() : GL_NONE;
+  return IsValid() ? render_target_->framebuffer() : GL_NONE;
 }
 
 bool IOSSurfaceGL::UseOffscreenSurface() const {
@@ -45,7 +47,10 @@ bool IOSSurfaceGL::UseOffscreenSurface() const {
 }
 
 bool IOSSurfaceGL::GLContextMakeCurrent() {
-  return IsValid() ? context_.MakeCurrent() : false;
+  if (!IsValid()) {
+    return false;
+  }
+  return render_target_->UpdateStorageSizeIfNecessary() && context_.MakeCurrent();
 }
 
 bool IOSSurfaceGL::GLContextClearCurrent() {
@@ -55,7 +60,7 @@ bool IOSSurfaceGL::GLContextClearCurrent() {
 
 bool IOSSurfaceGL::GLContextPresent() {
   TRACE_EVENT0("flutter", "IOSSurfaceGL::GLContextPresent");
-  if (!IsValid() || !context_.PresentRenderBuffer()) {
+  if (!IsValid() || !render_target_->PresentRenderBuffer()) {
     return false;
   }
 
