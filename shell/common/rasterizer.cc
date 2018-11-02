@@ -171,12 +171,13 @@ bool Rasterizer::DrawToSurface(flow::LayerTree& layer_tree) {
   //
   // TODO(amirh): populate the view embedder once we dynamically merge the
   // threads for embedded platform views.
-  auto external_view_embedder = nullptr;
+  auto external_view_embedder = surface_->GetExternalViewEmbedder();
+  //auto external_view_embedder = nullptr;;
 
   // TODO(amirh): uncomment this once external_view_embedder is populated.
-  // if (external_view_embedder != nullptr) {
-  //   external_view_embedder->SetFrameSize(layer_tree.frame_size());
-  // }
+  if (external_view_embedder != nullptr) {
+    external_view_embedder->SetFrameSize(layer_tree.frame_size());
+  }
 
   auto compositor_frame = compositor_context_->AcquireFrame(
       surface_->GetContext(), canvas, external_view_embedder,

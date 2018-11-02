@@ -23,6 +23,9 @@ class IOSSurfaceGL : public IOSSurface,
   IOSSurfaceGL(fml::scoped_nsobject<CAEAGLLayer> layer,
                FlutterPlatformViewsController* platform_views_controller);
 
+  IOSSurfaceGL(fml::scoped_nsobject<CAEAGLLayer> layer,
+               std::shared_ptr<IOSGLContext> context);
+
   ~IOSSurfaceGL() override;
 
   bool IsValid() const override;
@@ -59,7 +62,7 @@ class IOSSurfaceGL : public IOSSurface,
   SkCanvas* CompositeEmbeddedView(int view_id, const flow::EmbeddedViewParams& params) override;
 
  private:
-  IOSGLContext context_;
+                       std::shared_ptr<IOSGLContext> context_;
   std::unique_ptr<IOSGLRenderTarget> render_target_;
 
   FML_DISALLOW_COPY_AND_ASSIGN(IOSSurfaceGL);

@@ -11,8 +11,15 @@ namespace shell {
 
 IOSSurfaceGL::IOSSurfaceGL(fml::scoped_nsobject<CAEAGLLayer> layer,
                            FlutterPlatformViewsController* platform_views_controller)
-    : IOSSurface(platform_views_controller), context_() {
-  render_target_ = context_.CreateRenderTarget(std::move(layer));
+    : IOSSurface(platform_views_controller) {
+  context_ = std::make_shared<IOSGLContext>();
+  render_target_ = context_->CreateRenderTarget(std::move(layer));
+}
+
+IOSSurfaceGL::IOSSurfaceGL(fml::scoped_nsobject<CAEAGLLayer> layer,
+                           std::shared_ptr<IOSGLContext> context)
+: IOSSurface(nullptr), context_(context) {
+  render_target_ = context_->CreateRenderTarget(std::move(layer));
 }
 
 IOSSurfaceGL::~IOSSurfaceGL() = default;
@@ -22,7 +29,7 @@ bool IOSSurfaceGL::IsValid() const {
 }
 
 bool IOSSurfaceGL::ResourceContextMakeCurrent() {
-  return render_target_->IsValid() ? context_.ResourceMakeCurrent() : false;
+  return render_target_->IsValid() ? context_->ResourceMakeCurrent() : false;
 }
 
 void IOSSurfaceGL::UpdateStorageSizeIfNecessary() {
@@ -50,7 +57,7 @@ bool IOSSurfaceGL::GLContextMakeCurrent() {
   if (!IsValid()) {
     return false;
   }
-  return render_target_->UpdateStorageSizeIfNecessary() && context_.MakeCurrent();
+  return render_target_->UpdateStorageSizeIfNecessary() && context_->MakeCurrent();
 }
 
 bool IOSSurfaceGL::GLContextClearCurrent() {
@@ -84,7 +91,7 @@ void IOSSurfaceGL::SetFrameSize(SkISize frame_size) {
 void IOSSurfaceGL::PrerollCompositeEmbeddedView(int view_id) {
   FlutterPlatformViewsController* platform_views_controller = GetPlatformViewsController();
   FML_CHECK(platform_views_controller != nullptr);
-  platform_views_controller->PrerollCompositeEmbeddedView(view_id);
+  platform_views_controller->GLPrerollCompositeEmbeddedView(view_id, context_);
 }
 
 std::vector<SkCanvas*> IOSSurfaceGL::GetCurrentCanvases() {

@@ -6,6 +6,8 @@
 
 #import "FlutterOverlayView.h"
 #import "flutter/shell/platform/darwin/ios/ios_surface.h"
+#import "flutter/shell/platform/darwin/ios/ios_gl_context.h"
+#import "flutter/shell/platform/darwin/ios/ios_surface_gl.h"
 
 #include <map>
 #include <memory>
@@ -138,6 +140,12 @@ void FlutterPlatformViewsController::PrerollCompositeEmbeddedView(int view_id) {
   composition_order_.push_back(view_id);
 }
 
+  void FlutterPlatformViewsController::GLPrerollCompositeEmbeddedView(int view_id, std::shared_ptr<IOSGLContext> context) {
+    EnsureGLOverlayInitialized(view_id,std::move(context));
+    composition_frames_[view_id] = (overlays_[view_id]->surface->AcquireFrame(frame_size_));
+    composition_order_.push_back(view_id);
+}
+
 std::vector<SkCanvas*> FlutterPlatformViewsController::GetCurrentCanvases() {
   std::vector<SkCanvas*> canvases;
   for (size_t i = 0; i < composition_order_.size(); i++) {
@@ -213,6 +221,25 @@ void FlutterPlatformViewsController::EnsureOverlayInitialized(int64_t overlay_id
   std::unique_ptr<Surface> surface = ios_surface->CreateGPUSurface();
   overlays_[overlay_id] = std::make_unique<FlutterPlatformViewLayer>(
       overlay_view, std::move(ios_surface), std::move(surface));
+}
+
+  void FlutterPlatformViewsController::EnsureGLOverlayInitialized(int64_t overlay_id, std::shared_ptr<IOSGLContext> gl_context) {
+  if (overlays_.count(overlay_id) != 0) {
+    return;
+  }
+  FlutterOverlayView* overlay_view = [[FlutterOverlayView alloc] init];
+  overlay_view.frame = flutter_view_.get().bounds;
+  overlay_view.autoresizingMask =
+  (UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight);
+
+    fml::scoped_nsobject<CAEAGLLayer> eagl_layer(
+                                                 reinterpret_cast<CAEAGLLayer*>([overlay_view.layer retain]));
+    std::unique_ptr<IOSSurface> ios_surface = std::make_unique<shell::IOSSurfaceGL>(std::move(eagl_layer),
+                                                                                    std::move(gl_context));
+
+  std::unique_ptr<Surface> surface = ios_surface->CreateGPUSurface();
+  overlays_[overlay_id] = std::make_unique<FlutterPlatformViewLayer>(
+                                                                     overlay_view, std::move(ios_surface), std::move(surface));
 }
 
 }  // namespace shell

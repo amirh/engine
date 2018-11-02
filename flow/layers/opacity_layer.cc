@@ -39,15 +39,15 @@ void OpacityLayer::Paint(PaintContext& context) const {
       RasterCache::GetIntegralTransCTM(context.canvas->getTotalMatrix()));
 #endif
 
-  if (layers().size() == 1 && context.raster_cache) {
-    const SkMatrix& ctm = context.canvas->getTotalMatrix();
-    RasterCacheResult child_cache =
-        context.raster_cache->Get(layers()[0].get(), ctm);
-    if (child_cache.is_valid()) {
-      child_cache.draw(*context.canvas, &paint);
-      return;
-    }
-  }
+  // if (layers().size() == 1 && context.raster_cache) {
+  //   const SkMatrix& ctm = context.canvas->getTotalMatrix();
+  //   RasterCacheResult child_cache =
+  //       context.raster_cache->Get(layers()[0].get(), ctm);
+  //   if (child_cache.is_valid()) {
+  //     child_cache.draw(*context.canvas, &paint);
+  //     return;
+  //   }
+  // }
 
   Layer::AutoSaveLayer save_layer =
       Layer::AutoSaveLayer::Create(context, paint_bounds(), &paint);

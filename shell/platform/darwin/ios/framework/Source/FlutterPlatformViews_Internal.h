@@ -27,6 +27,7 @@
 namespace shell {
 
 class IOSSurface;
+class IOSGLContext;
 
 struct FlutterPlatformViewLayer {
   FlutterPlatformViewLayer(UIView* overlay_view,
@@ -52,6 +53,8 @@ class FlutterPlatformViewsController {
   void SetFrameSize(SkISize frame_size);
 
   void PrerollCompositeEmbeddedView(int view_id);
+
+  void GLPrerollCompositeEmbeddedView(int view_id, std::shared_ptr<IOSGLContext> context);
 
   std::vector<SkCanvas*> GetCurrentCanvases();
 
@@ -85,6 +88,7 @@ class FlutterPlatformViewsController {
   void OnAcceptGesture(FlutterMethodCall* call, FlutterResult& result);
 
   void EnsureOverlayInitialized(int64_t overlay_id);
+  void EnsureGLOverlayInitialized(int64_t overlay_id, std::shared_ptr<IOSGLContext> gl_context);
 
   FML_DISALLOW_COPY_AND_ASSIGN(FlutterPlatformViewsController);
 };
