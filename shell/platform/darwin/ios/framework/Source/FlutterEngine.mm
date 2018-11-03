@@ -297,9 +297,14 @@
 
   blink::TaskRunners task_runners(threadLabel.UTF8String,                          // label
                                   fml::MessageLoop::GetCurrent().GetTaskRunner(),  // platform
-                                  _threadHost.gpu_thread->GetTaskRunner(),         // gpu
-                                  _threadHost.ui_thread->GetTaskRunner(),          // ui
-                                  _threadHost.io_thread->GetTaskRunner()           // io
+                                  fml::MessageLoop::GetCurrent().GetTaskRunner(),  // platform
+                                  fml::MessageLoop::GetCurrent().GetTaskRunner(),  // platform
+                                  fml::MessageLoop::GetCurrent().GetTaskRunner()  // platform
+
+                                  // fml::MessageLoop::GetCurrent().GetTaskRunner(),  // platform
+                                  // _threadHost.gpu_thread->GetTaskRunner(),         // gpu
+                                  // _threadHost.ui_thread->GetTaskRunner(),          // ui
+                                  // _threadHost.io_thread->GetTaskRunner()           // io
   );
 
   // Lambda captures by pointers to ObjC objects are fine here because the
