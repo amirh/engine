@@ -162,6 +162,8 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     @Nullable
     private SemanticsNode accessibilityFocusedSemanticsNode;
 
+    private int embeddedFocusedNode = -1;
+
     // The accessibility features that should currently be active within Flutter, represented as
     // a bitmask whose values comes from {@link AccessibilityFeature}.
     private int accessibilityFeatureFlags = 0;
@@ -505,37 +507,25 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
 
         if(semanticsNode.platformViewId != -1) {
             View embeddedView = platformViewsController.getPlatformViewById(semanticsNode.platformViewId);
+            Log.d("AMIR", "platform view node global rect: " + semanticsNode.getGlobalRect());
             platformViewAccessibilityBridge = new PlatformViewAccessibilityBridge(5000, embeddedView,
                     rootAccessibilityView, semanticsNode.getGlobalRect());
             result = platformViewAccessibilityBridge.getNode(virtualViewId);
             Log.d("AMIR", "setting platform view's parent to: " + semanticsNode.parent.id);
             result.setParent(rootAccessibilityView, semanticsNode.parent.id);
             result.setSource(rootAccessibilityView, virtualViewId);
-            //result.setClassName("android.widget.FrameLayout");
-            return result;
-//            AccessibilityNodeInfo rootNode = embeddedView.createAccessibilityNodeInfo();
-//            int childCount  = rootNode.getChildCount();
-//            Log.d("AMIR", "platform view " + rootNode.getClass().getSimpleName() + ", " + childCount + " children");
-//            //AccessibilityNodeProvider provider = embeddedView.getAccessibilityNodeProvider();
-//            //Log.d("AMIR", "provider: " + provider);
-//            for (int i = 0; i < childCount; i++) {
-//                long id = getChildId(rootNode, i);
-//                idMap.put(nextId, (int) id);
-//                result.addChild(rootAccessibilityView, nextId++);
-//            }
-//            return result;
         }
 
 
 
-        result.setFocusable(semanticsNode.isFocusable());
+        //result.setFocusable(semanticsNode.isFocusable());
         if (inputFocusedSemanticsNode != null) {
             result.setFocused(inputFocusedSemanticsNode.id == virtualViewId);
         }
 
-        if (accessibilityFocusedSemanticsNode != null) {
-            result.setAccessibilityFocused(accessibilityFocusedSemanticsNode.id == virtualViewId);
-        }
+        // if (accessibilityFocusedSemanticsNode != null) {
+        //     result.setAccessibilityFocused(accessibilityFocusedSemanticsNode.id == virtualViewId);
+        // }
 
         if (semanticsNode.hasFlag(Flag.IS_TEXT_FIELD)) {
             result.setPassword(semanticsNode.hasFlag(Flag.IS_OBSCURED));
@@ -784,7 +774,7 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
      */
     @Override
     public boolean performAction(int virtualViewId, int accessibilityAction, @Nullable Bundle arguments) {
-        Log.d("AMIR", "performAction on: " + virtualViewId);
+        Log.d("AMIR", "performAction " + accessibilityAction + " on: " + virtualViewId);
         if (virtualViewId >= 5000) {
             return platformViewAccessibilityBridge.performAction(virtualViewId, accessibilityAction, arguments);
         }
@@ -867,6 +857,7 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
                     AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED
                 );
                 accessibilityFocusedSemanticsNode = null;
+                embeddedFocusedNode = -1;
                 return true;
             }
             case AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS: {
@@ -1037,17 +1028,26 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     public AccessibilityNodeInfo findFocus(int focus) {
         switch (focus) {
             case AccessibilityNodeInfo.FOCUS_INPUT: {
+                Log.d("AMIR", "find focus");
                 if (inputFocusedSemanticsNode != null) {
+                    Log.d("AMIR", "returning focused node: " + inputFocusedSemanticsNode.id);
                     return createAccessibilityNodeInfo(inputFocusedSemanticsNode.id);
                 }
             }
             // Fall through to check FOCUS_ACCESSIBILITY
             case AccessibilityNodeInfo.FOCUS_ACCESSIBILITY: {
+                Log.d("AMIR", "find focus a11y");
                 if (accessibilityFocusedSemanticsNode != null) {
+                    Log.d("AMIR", "returning focused node: " + accessibilityFocusedSemanticsNode.id);
                     return createAccessibilityNodeInfo(accessibilityFocusedSemanticsNode.id);
+                }
+                if (embeddedFocusedNode != -1) {
+                    Log.d("AMIR", "returning embedded focused node: " + embeddedFocusedNode);
+                    return createAccessibilityNodeInfo(embeddedFocusedNode);
                 }
             }
         }
+        Log.d("AMIR", "FOCUS IS NULL");
         return null;
     }
 
@@ -2090,6 +2090,13 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     public boolean delegateSendAccessibilityEvent(View child, AccessibilityEvent event) {
         if(platformViewAccessibilityBridge == null) {
             return false;
+        }
+        Log.d("AMIR", "delegateSendA11yEvent: " + event + " view: " + child);
+        if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED) {
+            int embedddedId = (int) PlatformViewAccessibilityBridge.getRecordSourceId(event);
+            int flutterId = platformViewAccessibilityBridge.embeddedToFlutterId.get(embedddedId);
+            accessibilityFocusedSemanticsNode = null;
+            embeddedFocusedNode = flutterId;
         }
         return platformViewAccessibilityBridge.delegateSendAccessibilityEvent(child, event);
     }

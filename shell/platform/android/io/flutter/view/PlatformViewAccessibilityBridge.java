@@ -22,7 +22,7 @@ public class PlatformViewAccessibilityBridge {
     private final View embeddedView;
     private final View rootAccessibilityView;
     private final Map<Integer, Integer> flutterToEmbeddedId = new HashMap<>();
-    private final Map<Integer, Integer> embeddedToFlutterId = new HashMap<>();
+    final Map<Integer, Integer> embeddedToFlutterId = new HashMap<>();
     private final Rect platformViewGlobalRect;
 
     private int nextFlutterId;
@@ -42,108 +42,105 @@ public class PlatformViewAccessibilityBridge {
             Log.d("AMIR", "source node id: " + sourceNodeEmbeddedId);
             flutterToEmbeddedId.put(flutterId, sourceNodeEmbeddedId);
             embeddedToFlutterId.put(sourceNodeEmbeddedId, flutterId);
-            AccessibilityNodeProvider provider = embeddedView.getAccessibilityNodeProvider();
-            if (sourceNode.getChildCount() > 0) {
-                int myId = (int) getParentId(provider.createAccessibilityNodeInfo((int) getChildId(sourceNode, 0)));
-                Log.d("AMIR", "myId: " + myId);
-            } else {
-                Log.d("AMIR", "no children");
-            }
             //traverseTree(sourceNode);
         } else {
             int embeddedId = flutterToEmbeddedId.get(flutterId);
             AccessibilityNodeProvider provider = embeddedView.getAccessibilityNodeProvider();
+            if(provider == null) {
+                return null;
+            }
             sourceNode = provider.createAccessibilityNodeInfo(embeddedId);
+        }
+
+        if (sourceNode == null) {
+            return null;
         }
 
         AccessibilityNodeInfo result = AccessibilityNodeInfo.obtain(rootAccessibilityView, flutterId);
         result.setPackageName(rootAccessibilityView.getContext().getPackageName());
-        result.setClassName("android.view.View");
         result.setSource(rootAccessibilityView, flutterId);
-
         result.setClassName(sourceNode.getClassName());
 
-    // result.setClassName(root.getClass().getName() + "#" + virtualNodeId);
+        // result.setClassName(root.getClass().getName() + "#" + virtualNodeId);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             result.setContextClickable(sourceNode.isContextClickable());
         }
         result.setAccessibilityFocused(sourceNode.isAccessibilityFocused());
 
-    Rect boundsInParent = new Rect();
-    sourceNode.getBoundsInParent(boundsInParent);
-    result.setBoundsInParent(boundsInParent);
+        Rect boundsInParent = new Rect();
+        sourceNode.getBoundsInParent(boundsInParent);
+        result.setBoundsInParent(boundsInParent);
 
-    Rect boundsInScreen = new Rect();
-    sourceNode.getBoundsInScreen(boundsInScreen);
-    if (flutterId >= 5000) {
-        boundsInParent.offset(platformViewGlobalRect.left, platformViewGlobalRect.top);
-    }
-    result.setBoundsInScreen(boundsInScreen);
+        Rect boundsInScreen = new Rect();
+        sourceNode.getBoundsInScreen(boundsInScreen);
+        boundsInScreen.offset(platformViewGlobalRect.left, platformViewGlobalRect.top);
+        result.setBoundsInScreen(boundsInScreen);
 
-    result.setAvailableExtraData(sourceNode.getAvailableExtraData());
-    result.setCanOpenPopup(sourceNode.canOpenPopup());
-    result.setCheckable(sourceNode.isCheckable());
-    result.setChecked(sourceNode.isChecked());
-    result.setCollectionInfo(sourceNode.getCollectionInfo());
-    result.setCollectionItemInfo(sourceNode.getCollectionItemInfo());
-    result.setContentDescription(sourceNode.getContentDescription());
-    result.setEditable(sourceNode.isEditable());
-    result.setEnabled(sourceNode.isEnabled());
-    result.setClickable(sourceNode.isClickable());
-    result.setContentInvalid(sourceNode.isContentInvalid());
-    result.setDismissable(sourceNode.isDismissable());
-    result.setDrawingOrder(sourceNode.getDrawingOrder());
-    result.setError(sourceNode.getError());
-    result.setFocusable(sourceNode.isFocusable());
-    result.setFocused(sourceNode.isFocused());
-    //result.setHeading(sourceNode.isHeading()); // crashes
-    result.setHintText(sourceNode.getHintText());
-    result.setImportantForAccessibility(sourceNode.isImportantForAccessibility());
-    result.setInputType(sourceNode.getInputType());
-    result.setLiveRegion(sourceNode.getLiveRegion());
-    result.setLongClickable(sourceNode.isLongClickable());
-    result.setMaxTextLength(sourceNode.getMaxTextLength());
-    result.setMovementGranularities(sourceNode.getMovementGranularities());
-    result.setMultiLine(sourceNode.isMultiLine());
-    //result.setPaneTitle(sourceNode.getPaneTitle()); // crashes
-    result.setPassword(sourceNode.isPassword());
-    result.setRangeInfo(sourceNode.getRangeInfo());
-    //result.setScreenReaderFocusable(sourceNode.isScreenReaderFocusable()); // crashes
-    result.setScrollable(sourceNode.isScrollable());
-    result.setSelected(sourceNode.isSelected());
-    result.setShowingHintText(sourceNode.isShowingHintText());
-    result.setText(sourceNode.getText());
-    // TODO: result.setTextSelection();
-    //result.setTooltipText(sourceNode.getTooltipText()); // crashes
-    result.setVisibleToUser(sourceNode.isVisibleToUser());
+        result.setAvailableExtraData(sourceNode.getAvailableExtraData());
+        result.setCanOpenPopup(sourceNode.canOpenPopup());
+        result.setCheckable(sourceNode.isCheckable());
+        result.setChecked(sourceNode.isChecked());
+        result.setCollectionInfo(sourceNode.getCollectionInfo());
+        result.setCollectionItemInfo(sourceNode.getCollectionItemInfo());
+        result.setContentDescription(sourceNode.getContentDescription());
+        result.setEditable(sourceNode.isEditable());
+        result.setEnabled(sourceNode.isEnabled());
+        result.setClickable(sourceNode.isClickable());
+        result.setContentInvalid(sourceNode.isContentInvalid());
+        result.setDismissable(sourceNode.isDismissable());
+        result.setDrawingOrder(sourceNode.getDrawingOrder());
+        result.setError(sourceNode.getError());
+        result.setFocusable(sourceNode.isFocusable());
+        result.setFocused(sourceNode.isFocused());
+        //result.setHeading(sourceNode.isHeading()); // crashes
+        result.setHintText(sourceNode.getHintText());
+        result.setImportantForAccessibility(sourceNode.isImportantForAccessibility());
+        result.setInputType(sourceNode.getInputType());
+        result.setLiveRegion(sourceNode.getLiveRegion());
+        result.setLongClickable(sourceNode.isLongClickable());
+        result.setMaxTextLength(sourceNode.getMaxTextLength());
+        result.setMovementGranularities(sourceNode.getMovementGranularities());
+        result.setMultiLine(sourceNode.isMultiLine());
+        //result.setPaneTitle(sourceNode.getPaneTitle()); // crashes
+        result.setPassword(sourceNode.isPassword());
+        result.setRangeInfo(sourceNode.getRangeInfo());
+        //result.setScreenReaderFocusable(sourceNode.isScreenReaderFocusable()); // crashes
+        result.setScrollable(sourceNode.isScrollable());
+        result.setSelected(sourceNode.isSelected());
+        result.setShowingHintText(sourceNode.isShowingHintText());
+        result.setText(sourceNode.getText());
+        // TODO: result.setTextSelection();
+        //result.setTooltipText(sourceNode.getTooltipText()); // crashes
+        result.setVisibleToUser(sourceNode.isVisibleToUser());
 
-    int parentEmbeddedId = (int) getParentId(sourceNode);
-    if (parentEmbeddedId == -1) {
-    } else {
-        if (!embeddedToFlutterId.containsKey(parentEmbeddedId)) {
-            Log.d("AMIR", "Can't map embedded id: " + parentEmbeddedId);
-            Log.d("AMIR", sourceNode.toString());
+        int parentEmbeddedId = (int) getParentId(sourceNode);
+        if (parentEmbeddedId == -1) {
         } else {
-            int parentFlutterId = embeddedToFlutterId.get(parentEmbeddedId);
-            result.setParent(rootAccessibilityView, parentFlutterId);
+            if (!embeddedToFlutterId.containsKey(parentEmbeddedId)) {
+                Log.d("AMIR", "Can't map embedded id: " + parentEmbeddedId);
+                Log.d("AMIR", sourceNode.toString());
+                result.setParent(rootAccessibilityView);
+            } else {
+                int parentFlutterId = embeddedToFlutterId.get(parentEmbeddedId);
+                result.setParent(rootAccessibilityView, parentFlutterId);
+            }
         }
-    }
-    // int parentNodeVirtualId = apiWorkarounds.getParentNodeVirtualId(sourceNode);
-    // if (parentNodeVirtualId != apiWorkarounds.getUndefinedNodeVirtualId()) {
-    //   result.setParent(root, parentNodeVirtualId);
-    // } else {
-    //   result.setParent(root);
-    // }
+        // int parentNodeVirtualId = apiWorkarounds.getParentNodeVirtualId(sourceNode);
+        // if (parentNodeVirtualId != apiWorkarounds.getUndefinedNodeVirtualId()) {
+        //   result.setParent(root, parentNodeVirtualId);
+        // } else {
+        //   result.setParent(root);
+        // }
 
-    result.getExtras().putAll(sourceNode.getExtras());
+        result.getExtras().putAll(sourceNode.getExtras());
 
-    for (AccessibilityNodeInfo.AccessibilityAction action : sourceNode.getActionList()) {
-      result.addAction(action);
-    }
-    if (flutterId < 5000) {
-        result.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_ACCESSIBILITY_FOCUS);
-    }
+        for (AccessibilityNodeInfo.AccessibilityAction action : sourceNode.getActionList()) {
+            result.addAction(action);
+        }
+        if (flutterId < 5000) {
+            result.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_ACCESSIBILITY_FOCUS);
+        }
 
 //    applyIfSet(apiWorkarounds.getTravelsalBeforeVirtualId(input), result::setTraversalBefore);
 //    applyIfSet(apiWorkarounds.getTravelsalAfterVirtualId(input), result::setTraversalAfter);
@@ -156,23 +153,23 @@ public class PlatformViewAccessibilityBridge {
             r = new ReflectionAccessors();
             Long embeddedBefore = (Long) r.mTravelsalBefore.get(sourceNode);
             if (embeddedBefore != null) {
-                Log.d("AMIR", "embedder before: " + embeddedBefore);
+                //Log.d("AMIR", "embedder before: " + embeddedBefore);
                 Integer flutterBefore = embeddedToFlutterId.get(embeddedBefore);
                 if(flutterBefore == null) {
-                    Log.d("AMIR", "can't map");
+                    //Log.d("AMIR", "can't map");
                 } else {
-                    Log.d("AMIR", "mapped to: " + flutterBefore);
+                    //Log.d("AMIR", "mapped to: " + flutterBefore);
                     result.setTraversalBefore(rootAccessibilityView, flutterBefore);
                 }
             }
             Long embeddedAfter = (Long) r.mTravelsalAfter.get(sourceNode);
             if (embeddedAfter != null) {
-                Log.d("AMIR", "embedder after: " + embeddedAfter);
+                //Log.d("AMIR", "embedder after: " + embeddedAfter);
                 Integer flutterAfter = embeddedToFlutterId.get(embeddedAfter);
                 if(flutterAfter == null) {
-                    Log.d("AMIR", "can't map");
+                    //Log.d("AMIR", "can't map");
                 } else {
-                    Log.d("AMIR", "mapped to: " + flutterAfter);
+                    //Log.d("AMIR", "mapped to: " + flutterAfter);
                     result.setTraversalAfter(rootAccessibilityView, flutterAfter);
                 }
             }
@@ -190,10 +187,11 @@ public class PlatformViewAccessibilityBridge {
     }
 
     private void addChildren(AccessibilityNodeInfo sourceNode, AccessibilityNodeInfo resultNode) {
+        Log.d("AMIR", "[mapping] adding " + sourceNode.getChildCount() + " children");
         for(int i = 0; i < sourceNode.getChildCount(); i++) {
             int embeddedId = (int) getChildId(sourceNode, i);
             int flutterId = nextFlutterId++;
-            Log.d("AMIR", "mapping embeddedId: " + embeddedId + " -> " + flutterId);
+            Log.d("AMIR", "mapping embeddedId: " + embeddedId + " -> " + flutterId + " (child " + i + ")");
             flutterToEmbeddedId.put(flutterId, embeddedId);
             embeddedToFlutterId.put(embeddedId, flutterId);
             resultNode.addChild(rootAccessibilityView, flutterId);
@@ -277,21 +275,20 @@ public class PlatformViewAccessibilityBridge {
         AccessibilityEvent result = AccessibilityEvent.obtain(input);
         int embeddedId = (int) getRecordSourceId(input);
         int flutterId = embeddedToFlutterId.get(embeddedId);
-    result.setSource(rootAccessibilityView, flutterId);
-    result.setClassName(input.getClassName());
-    result.setPackageName(input.getPackageName());
-    for (int i = 0; i < result.getRecordCount(); i++) {
-      AccessibilityRecord record = result.getRecord(i);
-      int recordEmbeddedId = (int) getRecordSourceId(record);
-      int recordFlutterId = embeddedToFlutterId.get(recordEmbeddedId);
-      record.setSource(rootAccessibilityView, recordFlutterId);
-    }
-    // input.recycle(); // TODO: check
+        result.setSource(rootAccessibilityView, flutterId);
+        result.setClassName(input.getClassName());
+        result.setPackageName(input.getPackageName());
+        for (int i = 0; i < result.getRecordCount(); i++) {
+            AccessibilityRecord record = result.getRecord(i);
+            int recordEmbeddedId = (int) getRecordSourceId(record);
+            int recordFlutterId = embeddedToFlutterId.get(recordEmbeddedId);
+            record.setSource(rootAccessibilityView, recordFlutterId);
+        }
         Log.d("AMIR", "delegating a11y event: " + result);
         return rootAccessibilityView.getParent().requestSendAccessibilityEvent(child, result);
     }
 
-    private static long getRecordSourceId(AccessibilityRecord record) {
+    public static long getRecordSourceId(AccessibilityRecord record) {
         try {
             Class clazz = Class.forName("android.view.accessibility.AccessibilityRecord");
             Method method = clazz.getMethod("getSourceNodeId");
