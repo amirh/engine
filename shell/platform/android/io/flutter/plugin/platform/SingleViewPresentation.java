@@ -13,7 +13,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.*;
+import android.view.accessibility.AccessibilityEvent;
 import android.widget.FrameLayout;
+import io.flutter.view.FlutterView;
 
 import java.lang.reflect.*;
 
@@ -74,6 +76,8 @@ class SingleViewPresentation extends Presentation {
 
     private PresentationState mState;
 
+    private View accessibilityDelegate;
+
     /**
      * Creates a presentation that will use the view factory to create a new
      * platform view in the presentation's onCreate, and attach it.
@@ -83,12 +87,14 @@ class SingleViewPresentation extends Presentation {
             Display display,
             PlatformViewFactory viewFactory,
             int viewId,
-            Object createParams) {
+            Object createParams,
+            View accessibilityDelegate) {
         super(outerContext, display);
         mViewFactory = viewFactory;
         mViewId = viewId;
         mCreateParams = createParams;
         mState = new PresentationState();
+        this.accessibilityDelegate = accessibilityDelegate;
         getWindow().setFlags(
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
@@ -102,10 +108,11 @@ class SingleViewPresentation extends Presentation {
      * <p>The display's density must match the density of the context used
      * when the view was created.
      */
-    public SingleViewPresentation(Context outerContext, Display display, PresentationState state) {
+    public SingleViewPresentation(Context outerContext, Display display, PresentationState state, View accessibilityDelegate) {
         super(outerContext, display);
         mViewFactory = null;
         mState = state;
+        this.accessibilityDelegate = accessibilityDelegate;
         getWindow().setFlags(
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
@@ -131,7 +138,7 @@ class SingleViewPresentation extends Presentation {
         }
 
         mContainer.addView(mState.mView.getView());
-        mRootView = new FrameLayout(getContext());
+        mRootView = new MyFrameLayout(getContext(), accessibilityDelegate);
         mRootView.addView(mContainer);
         mRootView.addView(mState.mFakeWindowRootView);
         setContentView(mRootView);
@@ -319,5 +326,22 @@ class SingleViewPresentation extends Presentation {
             WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams) args[1];
             mFakeWindowRootView.updateViewLayout(view, layoutParams);
         }
+    }
+}
+
+class MyFrameLayout extends FrameLayout {
+
+    private View accessibilityDelegate;
+
+    public MyFrameLayout(Context context, View accessibilityDelegate) {
+        super(context);
+        this.accessibilityDelegate = accessibilityDelegate;
+    }
+
+    @Override
+    public boolean requestSendAccessibilityEvent(View child, AccessibilityEvent event) {
+        FlutterView flutterView = (FlutterView) accessibilityDelegate;
+        Log.d("AMIR", "requestSendA11yEvent: " + event.toString());
+        return flutterView.delegateSendAccessibilityEvent(child, event);
     }
 }

@@ -10,6 +10,7 @@ import android.os.Build;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewParent;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -52,6 +53,8 @@ public class PlatformViewsController implements MethodChannel.MethodCallHandler 
 
     private final HashMap<Integer, VirtualDisplayController> vdControllers;
 
+    private View accessibilityDelegate;
+
     public PlatformViewsController() {
         mRegistry = new PlatformViewRegistryImpl();
         vdControllers = new HashMap<>();
@@ -66,16 +69,20 @@ public class PlatformViewsController implements MethodChannel.MethodCallHandler 
      *                        will be rendered.
      * @param messenger The Flutter application on the other side of this messenger drives this platform views controller.
      */
-    public void attach(Context context, TextureRegistry textureRegistry, BinaryMessenger messenger) {
+    public void attach(Context context, TextureRegistry textureRegistry, BinaryMessenger messenger, View accessibilityDelegate) {
         if (mContext != null) {
             throw new AssertionError(
                     "A PlatformViewsController can only be attached to a single output target.\n" +
                             "attach was called while the PlatformViewsController was already attached."
             );
         }
+        if (accessibilityDelegate == null) {
+            throw new AssertionError("setting accessibility delegate to null");
+        }
         mContext = context;
         mTextureRegistry = textureRegistry;
         mMessenger = messenger;
+        this.accessibilityDelegate = accessibilityDelegate;
         MethodChannel channel = new MethodChannel(messenger, CHANNEL_NAME, StandardMethodCodec.INSTANCE);
         channel.setMethodCallHandler(this);
     }
@@ -92,6 +99,7 @@ public class PlatformViewsController implements MethodChannel.MethodCallHandler 
         mMessenger = null;
         mContext = null;
         mTextureRegistry = null;
+        accessibilityDelegate = null;
     }
 
     public PlatformViewRegistry getRegistry() {
@@ -194,7 +202,8 @@ public class PlatformViewsController implements MethodChannel.MethodCallHandler 
                 toPhysicalPixels(logicalWidth),
                 toPhysicalPixels(logicalHeight),
                 id,
-                createParams
+                createParams,
+                accessibilityDelegate
         );
 
         if (vdController == null) {

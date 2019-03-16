@@ -21,6 +21,7 @@ import android.text.format.DateFormat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.*;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeProvider;
 import android.view.inputmethod.EditorInfo;
@@ -804,4 +805,9 @@ public class FlutterView extends SurfaceView implements BinaryMessenger, Texture
             mNativeView.getFlutterJNI().unregisterTexture(id);
         }
     }
+
+    public boolean delegateSendAccessibilityEvent(View child, AccessibilityEvent event) {
+        return mAccessibilityNodeProvider.delegateSendAccessibilityEvent(child, event);
+    }
+
 }

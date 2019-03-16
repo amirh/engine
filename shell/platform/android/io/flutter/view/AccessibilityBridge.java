@@ -32,6 +32,8 @@ import io.flutter.embedding.engine.systemchannels.AccessibilityChannel;
 import io.flutter.plugin.platform.PlatformViewsController;
 import io.flutter.util.Predicate;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
@@ -199,6 +201,9 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
 
     @Nullable
     private OnAccessibilityChangeListener onAccessibilityChangeListener;
+
+    private int nextId = 5000;
+    private PlatformViewAccessibilityBridge platformViewAccessibilityBridge;
 
     // Handler for all messages received from Flutter via the {@code accessibilityChannel}
     private final AccessibilityChannel.AccessibilityMessageHandler accessibilityMessageHandler = new AccessibilityChannel.AccessibilityMessageHandler() {
@@ -426,6 +431,24 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
                     || !SemanticsNode.nullableHasAncestor(accessibilityFocusedSemanticsNode, o -> o.hasFlag(Flag.HAS_IMPLICIT_SCROLLING)));
     }
 
+    private static long getChildId(AccessibilityNodeInfo node, int i) {
+        try {
+            Class clazz = Class.forName("android.view.accessibility.AccessibilityNodeInfo");
+            Method method = clazz.getMethod("getChildId", int.class);
+            long id = (long) method.invoke(node, i);
+            return id;
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        throw new IllegalStateException();
+    }
+
     /**
      * Returns {@link AccessibilityNodeInfo} for the view corresponding to the given {@code virtualViewId}.
      *
@@ -461,6 +484,10 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
             return result;
         }
 
+        if (virtualViewId>=5000) {
+            return platformViewAccessibilityBridge.getNode(virtualViewId);
+        }
+
         SemanticsNode semanticsNode = flutterSemanticsTree.get(virtualViewId);
         if (semanticsNode == null) {
             return null;
@@ -474,6 +501,33 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
         result.setPackageName(rootAccessibilityView.getContext().getPackageName());
         result.setClassName("android.view.View");
         result.setSource(rootAccessibilityView, virtualViewId);
+
+
+        if(semanticsNode.platformViewId != -1) {
+            View embeddedView = platformViewsController.getPlatformViewById(semanticsNode.platformViewId);
+            platformViewAccessibilityBridge = new PlatformViewAccessibilityBridge(5000, embeddedView,
+                    rootAccessibilityView, semanticsNode.getGlobalRect());
+            result = platformViewAccessibilityBridge.getNode(virtualViewId);
+            Log.d("AMIR", "setting platform view's parent to: " + semanticsNode.parent.id);
+            result.setParent(rootAccessibilityView, semanticsNode.parent.id);
+            result.setSource(rootAccessibilityView, virtualViewId);
+            //result.setClassName("android.widget.FrameLayout");
+            return result;
+//            AccessibilityNodeInfo rootNode = embeddedView.createAccessibilityNodeInfo();
+//            int childCount  = rootNode.getChildCount();
+//            Log.d("AMIR", "platform view " + rootNode.getClass().getSimpleName() + ", " + childCount + " children");
+//            //AccessibilityNodeProvider provider = embeddedView.getAccessibilityNodeProvider();
+//            //Log.d("AMIR", "provider: " + provider);
+//            for (int i = 0; i < childCount; i++) {
+//                long id = getChildId(rootNode, i);
+//                idMap.put(nextId, (int) id);
+//                result.addChild(rootAccessibilityView, nextId++);
+//            }
+//            return result;
+        }
+
+
+
         result.setFocusable(semanticsNode.isFocusable());
         if (inputFocusedSemanticsNode != null) {
             result.setFocused(inputFocusedSemanticsNode.id == virtualViewId);
@@ -730,6 +784,10 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
      */
     @Override
     public boolean performAction(int virtualViewId, int accessibilityAction, @Nullable Bundle arguments) {
+        Log.d("AMIR", "performAction on: " + virtualViewId);
+        if (virtualViewId >= 5000) {
+            return platformViewAccessibilityBridge.performAction(virtualViewId, accessibilityAction, arguments);
+        }
         SemanticsNode semanticsNode = flutterSemanticsTree.get(virtualViewId);
         if (semanticsNode == null) {
             return false;
@@ -2027,5 +2085,12 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
             }
             return sb.length() > 0 ? sb.toString() : null;
         }
+    }
+
+    public boolean delegateSendAccessibilityEvent(View child, AccessibilityEvent event) {
+        if(platformViewAccessibilityBridge == null) {
+            return false;
+        }
+        return platformViewAccessibilityBridge.delegateSendAccessibilityEvent(child, event);
     }
 }

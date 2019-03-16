@@ -11,6 +11,7 @@ import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.view.Surface;
 import android.view.View;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import io.flutter.view.TextureRegistry;
 
@@ -24,7 +25,8 @@ class VirtualDisplayController {
             int width,
             int height,
             int viewId,
-            Object createParams
+            Object createParams,
+            View accessibilityDelegate
     ) {
         textureEntry.surfaceTexture().setDefaultBufferSize(width, height);
         Surface surface = new Surface(textureEntry.surfaceTexture());
@@ -45,12 +47,13 @@ class VirtualDisplayController {
         }
 
         return new VirtualDisplayController(
-                context, virtualDisplay, viewFactory, surface, textureEntry, viewId, createParams);
+                context, virtualDisplay, viewFactory, surface, textureEntry, viewId, createParams, accessibilityDelegate);
     }
 
     private final Context mContext;
     private final int mDensityDpi;
     private final TextureRegistry.SurfaceTextureEntry mTextureEntry;
+    private final View accessibilityDelegate;
     private VirtualDisplay mVirtualDisplay;
     private SingleViewPresentation mPresentation;
     private Surface mSurface;
@@ -63,15 +66,17 @@ class VirtualDisplayController {
             Surface surface,
             TextureRegistry.SurfaceTextureEntry textureEntry,
             int viewId,
-            Object createParams
+            Object createParams,
+            View accessibilityDelegate
     ) {
         mTextureEntry = textureEntry;
         mSurface = surface;
         mContext = context;
         mVirtualDisplay = virtualDisplay;
         mDensityDpi = context.getResources().getDisplayMetrics().densityDpi;
+        this.accessibilityDelegate = accessibilityDelegate;
         mPresentation = new SingleViewPresentation(
-                context, mVirtualDisplay.getDisplay(), viewFactory, viewId, createParams);
+                context, mVirtualDisplay.getDisplay(), viewFactory, viewId, createParams, accessibilityDelegate);
         mPresentation.show();
     }
 
@@ -121,7 +126,7 @@ class VirtualDisplayController {
             public void onViewDetachedFromWindow(View v) {}
         });
 
-        mPresentation = new SingleViewPresentation(mContext, mVirtualDisplay.getDisplay(), presentationState);
+        mPresentation = new SingleViewPresentation(mContext, mVirtualDisplay.getDisplay(), presentationState, accessibilityDelegate);
         mPresentation.show();
     }
 
