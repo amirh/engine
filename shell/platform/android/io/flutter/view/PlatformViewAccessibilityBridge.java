@@ -38,12 +38,15 @@ public class PlatformViewAccessibilityBridge {
         AccessibilityNodeInfo sourceNode;
         if (flutterId < 5000) {
             sourceNode = embeddedView.createAccessibilityNodeInfo();
-            int sourceNodeEmbeddedId = (int) getAccessibilityId(sourceNode);
-            Log.d("AMIR", "source node id: " + sourceNodeEmbeddedId);
+            int sourceNodeEmbeddedId = getVirtualId(getAccessibilityId(sourceNode));
+            Log.d("MAPPED", "root node: " + flutterId + "[original id: " + sourceNodeEmbeddedId + "]");
             flutterToEmbeddedId.put(flutterId, sourceNodeEmbeddedId);
             embeddedToFlutterId.put(sourceNodeEmbeddedId, flutterId);
             //traverseTree(sourceNode);
         } else {
+            if(!flutterToEmbeddedId.containsKey(flutterId)) {
+                return null;
+            }
             int embeddedId = flutterToEmbeddedId.get(flutterId);
             AccessibilityNodeProvider provider = embeddedView.getAccessibilityNodeProvider();
             if(provider == null) {
@@ -114,7 +117,7 @@ public class PlatformViewAccessibilityBridge {
         //result.setTooltipText(sourceNode.getTooltipText()); // crashes
         result.setVisibleToUser(sourceNode.isVisibleToUser());
 
-        int parentEmbeddedId = (int) getParentId(sourceNode);
+        int parentEmbeddedId = getVirtualId(getParentId(sourceNode));
         if (parentEmbeddedId == -1) {
         } else {
             if (!embeddedToFlutterId.containsKey(parentEmbeddedId)) {
@@ -138,15 +141,16 @@ public class PlatformViewAccessibilityBridge {
         for (AccessibilityNodeInfo.AccessibilityAction action : sourceNode.getActionList()) {
             result.addAction(action);
         }
-        if (flutterId < 5000) {
-            result.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_ACCESSIBILITY_FOCUS);
-        }
+        // if (flutterId < 5000) {
+        //     result.addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_ACCESSIBILITY_FOCUS);
+        // }
 
 //    applyIfSet(apiWorkarounds.getTravelsalBeforeVirtualId(input), result::setTraversalBefore);
 //    applyIfSet(apiWorkarounds.getTravelsalAfterVirtualId(input), result::setTraversalAfter);
 //    applyIfSet(apiWorkarounds.getLabeledByVirtualId(input), result::setLabeledBy);
 //    applyIfSet(apiWorkarounds.getLabelForVirtualId(input), result::setLabelFor);
 
+        Log.d("MAPPED", "adding children for : " + flutterId + "[original id: " + flutterToEmbeddedId.get(flutterId) + "]");
         addChildren(sourceNode, result);
         ReflectionAccessors r;
         try {
@@ -189,11 +193,18 @@ public class PlatformViewAccessibilityBridge {
     private void addChildren(AccessibilityNodeInfo sourceNode, AccessibilityNodeInfo resultNode) {
         Log.d("AMIR", "[mapping] adding " + sourceNode.getChildCount() + " children");
         for(int i = 0; i < sourceNode.getChildCount(); i++) {
-            int embeddedId = (int) getChildId(sourceNode, i);
-            int flutterId = nextFlutterId++;
+            int embeddedId = getVirtualId(getChildId(sourceNode, i));
+            int flutterId;
+            if (embeddedToFlutterId.containsKey(embeddedId)) {
+                Log.d("AMIR", "re using id mapping");
+               flutterId = embeddedToFlutterId.get(embeddedId);
+            } else {
+                flutterId = nextFlutterId++;
+            }
             Log.d("AMIR", "mapping embeddedId: " + embeddedId + " -> " + flutterId + " (child " + i + ")");
             flutterToEmbeddedId.put(flutterId, embeddedId);
             embeddedToFlutterId.put(embeddedId, flutterId);
+            Log.d("MAPPED", "add Child: " + flutterId + "[original id: " + embeddedId + "]");
             resultNode.addChild(rootAccessibilityView, flutterId);
         }
     }
@@ -210,11 +221,21 @@ public class PlatformViewAccessibilityBridge {
         }
     }
 
+    public static int getVirtualId(long packedId) {
+        return (int) (packedId >> 32);
+    }
+
+    private static int getAccessibilityViewId(long packedId) {
+        return (int) packedId;
+    }
+
     private static long getChildId(AccessibilityNodeInfo node, int i) {
         try {
             Class clazz = Class.forName("android.view.accessibility.AccessibilityNodeInfo");
             Method method = clazz.getMethod("getChildId", int.class);
             long id = (long) method.invoke(node, i);
+            Log.d("A11Y", "child " + i + " of node " + getAccessibilityId(node) + " is " + id);
+            Log.d("A11Y", "child " + i + " of node " + getVirtualId(getAccessibilityId(node)) + " is " + getVirtualId(id));
             return id;
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -266,6 +287,10 @@ public class PlatformViewAccessibilityBridge {
 
     public boolean performAction(int virtualViewId, int accessibilityAction, Bundle arguments) {
         AccessibilityNodeProvider provider = embeddedView.getAccessibilityNodeProvider();
+        if (!flutterToEmbeddedId.containsKey(virtualViewId)) {
+            Log.d("AMIR", "can't find mapping " + virtualViewId);
+           return false;
+        }
         int embeddedId = flutterToEmbeddedId.get(virtualViewId);
         Log.d("AMIR", "bridging action to " + embeddedId + "(" + accessibilityAction + ")");
         return provider.performAction(embeddedId, accessibilityAction, arguments);
@@ -273,14 +298,17 @@ public class PlatformViewAccessibilityBridge {
 
     public boolean delegateSendAccessibilityEvent(View child, AccessibilityEvent input) {
         AccessibilityEvent result = AccessibilityEvent.obtain(input);
-        int embeddedId = (int) getRecordSourceId(input);
+        int embeddedId = getVirtualId(getRecordSourceId(input));
+        if(!embeddedToFlutterId.containsKey(embeddedId)) {
+            return false;
+        }
         int flutterId = embeddedToFlutterId.get(embeddedId);
         result.setSource(rootAccessibilityView, flutterId);
         result.setClassName(input.getClassName());
         result.setPackageName(input.getPackageName());
         for (int i = 0; i < result.getRecordCount(); i++) {
             AccessibilityRecord record = result.getRecord(i);
-            int recordEmbeddedId = (int) getRecordSourceId(record);
+            int recordEmbeddedId = getVirtualId(getRecordSourceId(record));
             int recordFlutterId = embeddedToFlutterId.get(recordEmbeddedId);
             record.setSource(rootAccessibilityView, recordFlutterId);
         }

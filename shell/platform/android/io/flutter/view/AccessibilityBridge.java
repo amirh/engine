@@ -514,6 +514,7 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
             Log.d("AMIR", "setting platform view's parent to: " + semanticsNode.parent.id);
             result.setParent(rootAccessibilityView, semanticsNode.parent.id);
             result.setSource(rootAccessibilityView, virtualViewId);
+            return result;
         }
 
 
@@ -1114,6 +1115,13 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
     public boolean onAccessibilityHoverEvent(MotionEvent event) {
         if (!accessibilityManager.isTouchExplorationEnabled()) {
             return false;
+        }
+
+        SemanticsNode semanticsNodeUnderCursor = getRootSemanticsNode().hitTest(new float[] {event.getX(), event.getY(), 0, 1});
+        if (semanticsNodeUnderCursor.platformViewId != -1) {
+            View embeddedView = platformViewsController.getPlatformViewById(semanticsNodeUnderCursor.platformViewId);
+            Log.d("HOVER", "**** dispatching to " + embeddedView);
+            return embeddedView.dispatchGenericMotionEvent(event);
         }
 
         if (event.getAction() == MotionEvent.ACTION_HOVER_ENTER || event.getAction() == MotionEvent.ACTION_HOVER_MOVE) {
@@ -2093,7 +2101,7 @@ public class AccessibilityBridge extends AccessibilityNodeProvider {
         }
         Log.d("AMIR", "delegateSendA11yEvent: " + event + " view: " + child);
         if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED) {
-            int embedddedId = (int) PlatformViewAccessibilityBridge.getRecordSourceId(event);
+            int embedddedId = PlatformViewAccessibilityBridge.getVirtualId(PlatformViewAccessibilityBridge.getRecordSourceId(event));
             int flutterId = platformViewAccessibilityBridge.embeddedToFlutterId.get(embedddedId);
             accessibilityFocusedSemanticsNode = null;
             embeddedFocusedNode = flutterId;
