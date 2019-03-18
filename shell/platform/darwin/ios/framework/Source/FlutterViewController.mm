@@ -624,6 +624,15 @@ static blink::PointerData::DeviceKind DeviceKindFromTouchType(UITouch* touch) {
 
   // First time since creation that the dimensions of its view is known.
   bool firstViewBoundsUpdate = !_viewportMetrics.physical_width;
+
+  if (!firstViewBoundsUpdate
+    && _viewportMetrics.device_pixel_ratio == scale
+      && _viewportMetrics.physical_width == viewSize.width * scale
+      && _viewportMetrics.physical_height == viewSize.height * scale
+      ) {
+    return;
+  }
+
   _viewportMetrics.device_pixel_ratio = scale;
   _viewportMetrics.physical_width = viewSize.width * scale;
   _viewportMetrics.physical_height = viewSize.height * scale;
