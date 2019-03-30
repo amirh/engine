@@ -111,6 +111,8 @@ public class FlutterView extends SurfaceView implements BinaryMessenger, Texture
     private FlutterNativeView mNativeView;
     private boolean mIsSoftwareRenderingEnabled = false; // using the software renderer or not
 
+    private View inputTarget;
+
     private final AccessibilityBridge.OnAccessibilityChangeListener onAccessibilityChangeListener = new AccessibilityBridge.OnAccessibilityChangeListener() {
         @Override
         public void onAccessibilityChanged(boolean isAccessibilityEnabled, boolean isTouchExplorationEnabled) {
@@ -145,6 +147,15 @@ public class FlutterView extends SurfaceView implements BinaryMessenger, Texture
         setFocusableInTouchMode(true);
 
         mNativeView.attachViewAndActivity(this, activity);
+
+        MethodChannel embeddedInput = new MethodChannel(this, "embeddedInput");
+        embeddedInput.setMethodCallHandler(new MethodChannel.MethodCallHandler() {
+            @Override
+            public void onMethodCall(MethodCall call, MethodChannel.Result result) {
+                inputTarget = mNativeView.getPluginRegistry().getPlatformViewsController().getPlatformViewById(0);
+                mImm.restartInput(inputTarget);
+            }
+        });
 
         mSurfaceCallback = new SurfaceHolder.Callback() {
             @Override
@@ -365,6 +376,9 @@ public class FlutterView extends SurfaceView implements BinaryMessenger, Texture
 
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+        if (inputTarget != null) {
+            return inputTarget.onCreateInputConnection(outAttrs);
+        }
         return mTextInputPlugin.createInputConnection(this, outAttrs);
     }
 
@@ -803,6 +817,19 @@ public class FlutterView extends SurfaceView implements BinaryMessenger, Texture
             surfaceTexture.setOnFrameAvailableListener(null);
             surfaceTexture.release();
             mNativeView.getFlutterJNI().unregisterTexture(id);
+        }
+    }
+
+    @Override
+    public boolean checkInputConnectionProxy(View view) {
+        // This should walk up the view hierarchy and only return true if it hits an embedded platform view.
+        return true;
+    }
+
+    public void flutterWantsInput() {
+        if (inputTarget != null) {
+            inputTarget = null;
+            mImm.restartInput(this);
         }
     }
 }

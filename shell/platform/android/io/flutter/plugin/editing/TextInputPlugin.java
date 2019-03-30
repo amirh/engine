@@ -48,6 +48,8 @@ public class TextInputPlugin {
         textInputChannel.setTextInputMethodHandler(new TextInputChannel.TextInputMethodHandler() {
             @Override
             public void show() {
+                FlutterView flutterView = (FlutterView) mView;
+                flutterView.flutterWantsInput();
                 showTextInput(mView);
             }
 
