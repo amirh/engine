@@ -113,6 +113,14 @@ public class FlutterEngine {
         lifecycleListener.onPreEngineRestart();
       }
     }
+
+    @Override
+    public void onPositionPlatformView(int viewId, float x, float y, float width, float height) {
+      Log.d("AMIR", "engine is delegating to " + engineLifecycleListeners.size() + " listeners");
+      for (EngineLifecycleListener lifecycleListener : engineLifecycleListeners) {
+        lifecycleListener.onPositionPlatformView(viewId, x, y, width, height);
+      }
+    }
   };
 
   /**
@@ -203,6 +211,17 @@ public class FlutterEngine {
     textInputChannel = new TextInputChannel(dartExecutor);
 
     platformViewsController = new PlatformViewsController();
+    addEngineLifecycleListener(new EngineLifecycleListener() {
+      @Override
+      public void onPreEngineRestart() {
+          platformViewsController.onPreEngineRestart();
+      }
+
+      @Override
+      public void onPositionPlatformView(int viewId, float x, float y, float width, float height) {
+          platformViewsController.onPositionPlatformView(viewId, x, y, width, height);
+      }
+    });
 
     this.pluginRegistry = new FlutterEnginePluginRegistry(
       context.getApplicationContext(),
@@ -431,5 +450,7 @@ public class FlutterEngine {
      * Lifecycle callback invoked before a hot restart of the Flutter engine.
      */
     void onPreEngineRestart();
+
+    void onPositionPlatformView(int viewId, float x, float y, float width, float height);
   }
 }

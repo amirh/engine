@@ -39,6 +39,8 @@ void PlatformViewLayer::Paint(PaintContext& context) const {
     return;
   }
   SkCanvas* canvas = context.view_embedder->CompositeEmbeddedView(view_id_);
-  context.leaf_nodes_canvas = canvas;
+  if (canvas != nullptr) {
+    context.leaf_nodes_canvas = canvas;
+  }
 }
 }  // namespace flutter

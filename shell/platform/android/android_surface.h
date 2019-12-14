@@ -17,9 +17,10 @@
 
 namespace flutter {
 
+
 class AndroidSurface {
  public:
-  static std::unique_ptr<AndroidSurface> Create(bool use_software_rendering);
+  static std::unique_ptr<AndroidSurface> Create(bool use_software_rendering, fml::jni::JavaObjectWeakGlobalRef java_object);
 
   virtual ~AndroidSurface();
 
@@ -36,6 +37,8 @@ class AndroidSurface {
   virtual bool ResourceContextClearCurrent() = 0;
 
   virtual bool SetNativeWindow(fml::RefPtr<AndroidNativeWindow> window) = 0;
+
+  virtual void SetPositionPlatformViewCallback(std::function<void (int, float, float, float, float)> position_platform_view) {}
 };
 
 }  // namespace flutter

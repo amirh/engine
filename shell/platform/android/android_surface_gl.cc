@@ -8,6 +8,7 @@
 
 #include "flutter/fml/logging.h"
 #include "flutter/fml/memory/ref_ptr.h"
+#include "flutter/shell/platform/android/platform_view_android_jni.h"
 
 namespace flutter {
 
@@ -25,7 +26,7 @@ static fml::RefPtr<AndroidContextGL> CreateResourceLoadingContext() {
   return context;
 }
 
-AndroidSurfaceGL::AndroidSurfaceGL() {
+AndroidSurfaceGL::AndroidSurfaceGL(fml::jni::JavaObjectWeakGlobalRef java_object) : java_object_(java_object) {
   // Acquire the offscreen context.
   offscreen_context_ = CreateResourceLoadingContext();
 
@@ -127,7 +128,61 @@ intptr_t AndroidSurfaceGL::GLContextFBO() const {
 
 // |GPUSurfaceGLDelegate|
 ExternalViewEmbedder* AndroidSurfaceGL::GetExternalViewEmbedder() {
+  return this;
+}
+// |ExternalViewEmbedder|
+SkCanvas* AndroidSurfaceGL::GetRootCanvas() {
   return nullptr;
+}
+
+// |ExternalViewEmbedder|
+void AndroidSurfaceGL::CancelFrame() {
+}
+
+// |ExternalViewEmbedder|
+void AndroidSurfaceGL::BeginFrame(SkISize frame_size, GrContext* context, double device_pixel_ratio) {
+}
+
+// |ExternalViewEmbedder|
+void AndroidSurfaceGL::PrerollCompositeEmbeddedView(
+    int view_id,
+    std::unique_ptr<flutter::EmbeddedViewParams> params) {
+  JNIEnv* env = fml::jni::AttachCurrentThread();
+  fml::jni::ScopedJavaLocalRef<jobject> view = java_object_.get(env);
+  if (view.is_null()) {
+    // The Java object died.
+    return;
+  }
+  FlutterViewOnPositionPlatformView(fml::jni::AttachCurrentThread(), view.obj(), view_id,
+    params->offsetPixels.x(),
+    params->offsetPixels.y(),
+    params->sizePoints.width(),
+    params->sizePoints.height()
+  );
+  FML_LOG(ERROR) << "compositing embedded view: " << view_id << ", at: " << params->offsetPixels.x()
+    << ", " << params->offsetPixels.y() << ", "
+    << " (" << params->sizePoints.width() << "x" << params->sizePoints.height() << ")";
+}
+
+// |ExternalViewEmbedder|
+PostPrerollResult AndroidSurfaceGL::PostPrerollAction(
+    fml::RefPtr<fml::GpuThreadMerger> gpu_thread_merger) {
+  return PostPrerollResult::kSuccess;
+}
+
+// |ExternalViewEmbedder|
+std::vector<SkCanvas*> AndroidSurfaceGL::GetCurrentCanvases() {
+  return canvases_;
+}
+
+// |ExternalViewEmbedder|
+SkCanvas* AndroidSurfaceGL::CompositeEmbeddedView(int view_id) {
+  return nullptr;
+}
+
+// |ExternalViewEmbedder|
+bool AndroidSurfaceGL::SubmitFrame(GrContext* context) {
+  return true;
 }
 
 }  // namespace flutter

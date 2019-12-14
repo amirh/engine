@@ -17,9 +17,10 @@
 namespace flutter {
 
 class AndroidSurfaceGL final : public GPUSurfaceGLDelegate,
-                               public AndroidSurface {
+                               public AndroidSurface,
+                               public ExternalViewEmbedder {
  public:
-  AndroidSurfaceGL();
+  AndroidSurfaceGL(fml::jni::JavaObjectWeakGlobalRef java_object);
 
   ~AndroidSurfaceGL() override;
 
@@ -61,9 +62,38 @@ class AndroidSurfaceGL final : public GPUSurfaceGLDelegate,
   // |GPUSurfaceGLDelegate|
   ExternalViewEmbedder* GetExternalViewEmbedder() override;
 
+  // |ExternalViewEmbedder|
+  SkCanvas* GetRootCanvas() override;
+
+  // |ExternalViewEmbedder|
+  void CancelFrame() override;
+
+  // |ExternalViewEmbedder|
+  void BeginFrame(SkISize frame_size, GrContext* context, double device_pixel_ratio) override;
+
+  // |ExternalViewEmbedder|
+  void PrerollCompositeEmbeddedView(int view_id,
+                                    std::unique_ptr<flutter::EmbeddedViewParams> params) override;
+
+  // |ExternalViewEmbedder|
+  PostPrerollResult PostPrerollAction(fml::RefPtr<fml::GpuThreadMerger> gpu_thread_merger) override;
+
+  // |ExternalViewEmbedder|
+  std::vector<SkCanvas*> GetCurrentCanvases() override;
+
+  // |ExternalViewEmbedder|
+  SkCanvas* CompositeEmbeddedView(int view_id) override;
+
+  // |ExternalViewEmbedder|
+  bool SubmitFrame(GrContext* context) override;
+
  private:
   fml::RefPtr<AndroidContextGL> onscreen_context_;
   fml::RefPtr<AndroidContextGL> offscreen_context_;
+
+  std::vector<SkCanvas*> canvases_;
+
+  fml::jni::JavaObjectWeakGlobalRef java_object_;
 
   FML_DISALLOW_COPY_AND_ASSIGN(AndroidSurfaceGL);
 };

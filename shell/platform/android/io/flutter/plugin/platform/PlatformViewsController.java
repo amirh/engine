@@ -18,6 +18,8 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import android.webkit.WebView;
+import android.widget.FrameLayout;
 import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.systemchannels.PlatformViewsChannel;
 import io.flutter.plugin.editing.TextInputPlugin;
@@ -69,6 +71,8 @@ public class PlatformViewsController implements PlatformViewsAccessibilityDelega
     // Since each virtual display has it's unique context this allows associating any view with the platform view that
     // it is associated with(e.g if a platform view creates other views in the same virtual display.
     private final HashMap<Context, View> contextToPlatformView;
+
+    private WebView webView;
 
     private final PlatformViewsChannel.PlatformViewsHandler channelHandler = new PlatformViewsChannel.PlatformViewsHandler() {
         @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
@@ -287,6 +291,9 @@ public class PlatformViewsController implements PlatformViewsAccessibilityDelega
         this.textureRegistry = textureRegistry;
         platformViewsChannel = new PlatformViewsChannel(dartExecutor);
         platformViewsChannel.setPlatformViewsHandler(channelHandler);
+        webView =  new WebView(context);
+        webView.getSettings().setJavaScriptEnabled(true);
+        webView.loadUrl("https://www.google.com");
     }
 
     /**
@@ -394,6 +401,18 @@ public class PlatformViewsController implements PlatformViewsAccessibilityDelega
 
     public void onPreEngineRestart() {
         flushAllViews();
+    }
+
+    public void onPositionPlatformView(int viewId, float x, float y, float width, float height) {
+      Log.d("AMIR", "PVC::onPositionPlatformView(" + viewId + ", " + x + ", " + y + ", " + width + ", " + height);
+        float density = context.getResources().getDisplayMetrics().density;
+      FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams((int) (width * density), (int) (height * density));
+      layoutParams.leftMargin = (int) x;
+      layoutParams.topMargin = (int) y;
+      webView.setLayoutParams(layoutParams);
+      if (webView.getParent() == null) {
+          ((FrameLayout)flutterView).addView(webView);
+      }
     }
 
     @Override

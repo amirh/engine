@@ -94,6 +94,10 @@ public class FlutterPluginRegistry
         mPlatformViewsController.onPreEngineRestart();
     }
 
+    public void onPositionPlatformView(int viewId, float x, float y, float width, float height) {
+        mPlatformViewsController.onPositionPlatformView(viewId, x, y, width, height);
+    }
+
     public PlatformViewsController getPlatformViewsController() {
         return mPlatformViewsController;
     }

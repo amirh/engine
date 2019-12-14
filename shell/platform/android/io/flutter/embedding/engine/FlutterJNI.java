@@ -753,6 +753,7 @@ public class FlutterJNI {
   @UiThread
   public void addEngineLifecycleListener(@NonNull EngineLifecycleListener engineLifecycleListener) {
     ensureRunningOnMainThread();
+    Log.d("AMIR", "*************** adding listener: " + engineLifecycleListener);
     engineLifecycleListeners.add(engineLifecycleListener);
   }
 
@@ -764,6 +765,15 @@ public class FlutterJNI {
   public void removeEngineLifecycleListener(@NonNull EngineLifecycleListener engineLifecycleListener) {
     ensureRunningOnMainThread();
     engineLifecycleListeners.remove(engineLifecycleListener);
+  }
+
+  @SuppressWarnings("unused")
+  private void onPositionPlatformView(int viewId, float x, float y, float width, float height) {
+    ensureRunningOnMainThread();
+    Log.d("AMIR", "delegating to " + engineLifecycleListeners.size() + " listeners");
+    for (EngineLifecycleListener listener : engineLifecycleListeners) {
+      listener.onPositionPlatformView(viewId, x, y, width, height);
+    }
   }
 
   // Called by native.

@@ -164,5 +164,14 @@ public class FlutterNativeView implements BinaryMessenger {
             }
             mPluginRegistry.onPreEngineRestart();
         }
+
+        @Override
+        public void onPositionPlatformView(int viewId, float x, float y, float width, float height) {
+            if (mPluginRegistry == null) {
+                Log.d("AMIR", "registry is null");
+                return;
+            }
+            mPluginRegistry.onPositionPlatformView(viewId, x, y, width, height);
+        }
     }
 }
