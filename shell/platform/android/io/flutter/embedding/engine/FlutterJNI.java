@@ -766,6 +766,11 @@ public class FlutterJNI {
     engineLifecycleListeners.remove(engineLifecycleListener);
   }
 
+  @SuppressWarnings("unused")
+  private void onPositionPlatformView(int viewId, float x, float y, float width, float height) {
+      Log.d("AMIR", "onPositionPlatformView(" + viewId + ", " + x + ", " + y + ", " + width + ", " + height);
+  }
+
   // Called by native.
   @SuppressWarnings("unused")
   private void onPreEngineRestart() {
