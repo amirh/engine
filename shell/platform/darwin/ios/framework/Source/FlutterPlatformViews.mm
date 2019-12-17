@@ -397,10 +397,10 @@ bool FlutterPlatformViewsController::SubmitFrame(GrContext* gr_context,
     FML_CHECK(platform_view_root.superview == overlay.superview);
     if (platform_view_root.superview == flutter_view) {
       [flutter_view bringSubviewToFront:platform_view_root];
-      [flutter_view bringSubviewToFront:overlay];
+      // [flutter_view bringSubviewToFront:overlay];
     } else {
       [flutter_view addSubview:platform_view_root];
-      [flutter_view addSubview:overlay];
+      // [flutter_view addSubview:overlay];
       overlay.frame = flutter_view.bounds;
     }
 
